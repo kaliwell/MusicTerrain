@@ -1,0 +1,1 @@
+PASS: --biome jungle rendered 30 frames; invalid biome rejected before window creation

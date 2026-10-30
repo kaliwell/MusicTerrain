@@ -181,3 +181,20 @@ is unchanged and no Minecraft world persistence/collision/fluid simulation is cl
 - [Screenshots and biome contracts](BIOMES.md). Raw output:
   [verification/biomes](verification/biomes/). No hardware GPU/audio, Windows,
   collision or persistent-world functionality is claimed by these checks.
+
+## Tropical jungle verification — 2026-10-30 UTC
+
+- `cargo test -p musicterrain`: **65 passed**, none ignored (added jungle density,
+  trunk-height and vegetation-switch tests). Existing automatic climate,
+  whole/tiled layout, mesh material and alpha tests now cover Jungle as well.
+- `cargo test -p musicterrain --no-default-features`: **43 passed**.
+- Strict all-target Clippy, workspace format check and native build: passed.
+  Public-tree scan and `git diff --check`: passed.
+- Actual X11 editor `--scene --biomes`: exit 0, 35 editor events, 37 distinct
+  uploaded meshes; all eleven biomes and return to Auto were exercised.
+- Actual `--biome jungle --silent-preview --offscreen --frames 30` completed
+  and wrote a PNG; invalid biome names still fail before window creation.
+- [Actual Jungle screenshot](images/biomes/biome-jungle.png). Captured with fresh
+  data homes, silent diagnostic clock and Xvfb/software Vulkan. Hardware and
+  Windows performance were not measured; vines have no climbing collision.
+- Raw evidence: [verification/jungle](verification/jungle/).

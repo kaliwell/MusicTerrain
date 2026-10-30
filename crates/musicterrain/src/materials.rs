@@ -47,10 +47,15 @@ pub enum Material {
     Podzol = 28,
     Cactus = 29,
     DeadBush = 30,
+    JungleLogSide = 31,
+    JungleLogTop = 32,
+    JungleLeaves = 33,
+    Vine = 34,
+    Fern = 35,
 }
 
 impl Material {
-    pub const ALL: [Self; 31] = [
+    pub const ALL: [Self; 36] = [
         Self::GrassTop,
         Self::GrassSide,
         Self::Dirt,
@@ -82,6 +87,11 @@ impl Material {
         Self::Podzol,
         Self::Cactus,
         Self::DeadBush,
+        Self::JungleLogSide,
+        Self::JungleLogTop,
+        Self::JungleLeaves,
+        Self::Vine,
+        Self::Fern,
     ];
 
     pub const fn layer(self) -> u16 {
@@ -97,6 +107,8 @@ impl Material {
             Self::BirchLeaves => [130, 175, 68],
             Self::SpruceLeaves => [62, 105, 83],
             Self::AcaciaLeaves => [160, 168, 65],
+            Self::JungleLeaves | Self::Vine => [62, 145, 49],
+            Self::Fern => [74, 160, 55],
             Self::Water => [78, 145, 225],
             _ => [255; 3],
         }
@@ -109,7 +121,11 @@ impl Material {
     pub const fn leaves(self) -> bool {
         matches!(
             self,
-            Self::OakLeaves | Self::BirchLeaves | Self::SpruceLeaves | Self::AcaciaLeaves
+            Self::OakLeaves
+                | Self::BirchLeaves
+                | Self::SpruceLeaves
+                | Self::AcaciaLeaves
+                | Self::JungleLeaves
         )
     }
     fn filenames(self) -> &'static [&'static str] {
@@ -145,6 +161,11 @@ impl Material {
             Self::Podzol => &["podzol_top.png"],
             Self::Cactus => &["cactus_side.png"],
             Self::DeadBush => &["dead_bush.png"],
+            Self::JungleLogSide => &["jungle_log.png"],
+            Self::JungleLogTop => &["jungle_log_top.png"],
+            Self::JungleLeaves => &["jungle_leaves.png"],
+            Self::Vine => &["vine.png"],
+            Self::Fern => &["fern.png"],
         }
     }
 }
@@ -417,7 +438,8 @@ fn procedural(material: Material) -> Vec<u8> {
                 Material::OakLeaves
                 | Material::BirchLeaves
                 | Material::SpruceLeaves
-                | Material::AcaciaLeaves => color(
+                | Material::AcaciaLeaves
+                | Material::JungleLeaves => color(
                     [190; 3],
                     shade + (hash(x / 3, y / 3, 9) % 43) as i32 - 21,
                     if grain.is_multiple_of(7) { 0 } else { 255 },
@@ -447,6 +469,23 @@ fn procedural(material: Material) -> Vec<u8> {
                         [0; 4]
                     }
                 }
+                Material::JungleLogSide => color(
+                    [118, 100, 56],
+                    shade / 2 - if (x + y / 5).is_multiple_of(5) { 25 } else { 0 },
+                    255,
+                ),
+                Material::Vine => {
+                    let stem = x % 7 == 2 || ((y / 3 + x / 3) % 3 == 0 && x % 7 < 5 && y % 4 < 2);
+                    color([197; 3], shade, if stem { 255 } else { 0 })
+                }
+                Material::Fern => {
+                    let distance = (x as i32 - 8).abs();
+                    let blade = (y >= 2 && x == 8)
+                        || ((4..15).contains(&y)
+                            && distance <= (y as i32 - 1) / 2
+                            && (distance + y as i32) % 3 != 0);
+                    color([205; 3], shade, if blade { 255 } else { 0 })
+                }
                 Material::BirchLogSide => color(
                     [224, 222, 207],
                     if (x + hash(0, y / 2, 41) % 13) % 16 < 5 && y % 5 < 2 {
@@ -466,10 +505,14 @@ fn procedural(material: Material) -> Vec<u8> {
                     shade / 2 - if x.is_multiple_of(5) { 22 } else { 0 },
                     255,
                 ),
-                Material::BirchLogTop | Material::SpruceLogTop | Material::AcaciaLogTop => {
+                Material::BirchLogTop
+                | Material::SpruceLogTop
+                | Material::AcaciaLogTop
+                | Material::JungleLogTop => {
                     let rgb = match material {
                         Material::BirchLogTop => [210, 192, 143],
                         Material::AcaciaLogTop => [177, 96, 58],
+                        Material::JungleLogTop => [170, 133, 83],
                         _ => [132, 101, 66],
                     };
                     let ring = (((x as i32 - 8).pow(2) + (y as i32 - 8).pow(2)) as u32).isqrt();

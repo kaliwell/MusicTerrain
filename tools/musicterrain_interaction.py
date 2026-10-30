@@ -71,7 +71,7 @@ def main():
                 if a.biomes:
                     click(100,315)
                     biome_hashes=[]
-                    for biome in ('meadow','forest','alpine','shore','birch-forest','taiga','desert','badlands','savanna','swamp','auto'):
+                    for biome in ('meadow','forest','alpine','shore','birch-forest','taiga','desert','badlands','savanna','swamp','jungle','auto'):
                         before=text().count('preview mesh uploaded')
                         click(1130,601)
                         wait_until(lambda:text().count('preview mesh uploaded')>before)

@@ -1,0 +1,104 @@
+   Compiling musicterrain v0.1.0 (/workspace/horizon/crates/musicterrain)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.97s
+     Running unittests src/lib.rs (target/debug/deps/musicterrain-702194956bfd29c5)
+
+running 6 tests
+test diagnostics::tests::collisions_and_unrelated_files_are_never_truncated ... ok
+test diagnostics::tests::invalid_limits_and_file_destinations_return_errors ... ok
+test diagnostics::tests::concurrent_events_are_complete ... ok
+test diagnostics::tests::tracing_events_reach_the_file_writer ... ok
+test diagnostics::tests::oversized_records_and_repeated_sessions_stay_bounded ... ok
+test transport::tests::seek_pause_and_end_are_stable ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (target/debug/deps/musicterrain-a025dcb9816d0b75)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/audio_pipeline.rs (target/debug/deps/audio_pipeline-e1d9acdc7f120525)
+
+running 9 tests
+test cancelled_import_and_analysis_return_errors_without_partial_results ... ok
+test low_frequency_precision_mode_works ... ok
+test actual_wav_decoder_downmixes_and_hashes_encoded_audio ... ok
+test resampling_preserves_duration_and_tone_and_suppresses_aliases ... ok
+test seeking_and_analysis_are_independent_of_lookup_order ... ok
+test silence_is_exactly_stable_even_after_a_transient ... ok
+test validation_rejects_nonfinite_pcm_and_invalid_fft_or_bands ... ok
+test synthetic_tones_land_in_hz_bands_and_have_calibrated_rms ... ok
+test white_noise_sweep_and_regular_pulses_produce_finite_meaningful_features ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/cli.rs (target/debug/deps/cli-439c52d06370a8d6)
+
+running 5 tests
+test corrupt_audio_fails_with_context_before_creating_an_export ... ok
+test audio_to_heightmap_exports_are_reproducible_with_correct_world_coordinates ... ok
+test existing_audio_and_export_directories_are_preserved ... ok
+test malformed_cli_options_fail_without_creating_outputs ... ok
+test seed_and_audio_time_change_terrain_but_not_extracted_audio_features ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+     Running tests/ecology.rs (target/debug/deps/ecology-98871f38fdae3baa)
+
+running 10 tests
+test automatic_climate_reaches_every_lowland_biome_and_is_seeded ... ok
+test decorations_follow_the_sampled_surface_and_avoid_water_steep_slopes_and_holes ... ok
+test default_bass_mountains_has_trees_grass_flowers_and_visible_cave_entrances ... ok
+test ecology_requests_and_extreme_coordinates_are_bounded_and_stable ... ok
+test jungle_has_tall_dense_trees_and_fern_understory_without_flowers_or_cacti ... ok
+test seeded_layout_is_repeatable_and_different_seeds_change_it ... ok
+test selected_biomes_have_specific_surfaces_species_and_order_independent_layouts ... ok
+test surface_profiles_distinguish_shores_meadows_forests_and_alpine ... ok
+test tiled_generation_and_edge_halos_match_one_whole_request_in_any_order ... ok
+test cave_columns_match_signed_density_and_continue_across_world_cells ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/materials.rs (target/debug/deps/materials-1c294d1b9d7c9cac)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scene_mesh.rs (target/debug/deps/scene_mesh-51cdc6bb1aface0e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/terrain_pipeline.rs (target/debug/deps/terrain_pipeline-dbf37428773fb312)
+
+running 13 tests
+test all_noise_modes_and_extreme_parameters_remain_finite ... ok
+test audio_coordinate_mapping_has_explicit_clamp_loop_and_finite_semantics ... ok
+test mapping_attack_release_response_is_bounded_and_reproducible ... ok
+test mapping_combines_in_declared_order_and_pauses_stably ... ok
+test mapping_rejects_bad_ranges_and_resets_after_rule_edit ... ok
+test adjacent_tiles_sample_identical_world_edges_in_any_order ... ok
+test preset_save_cannot_overwrite_existing_configuration ... ok
+test parameters_have_observable_effects_and_three_dimensional_topology ... ok
+test presets_are_valid_distinct_and_versioned ... ok
+test seek_replay_and_sampling_order_do_not_change_fixed_hop_snapshots ... ok
+test silent_and_nonfinite_features_cannot_explode_mapping ... ok
+test seeded_horizon_noise_is_reproducible_and_seed_sensitive ... ok
+test volume_generation_is_order_independent_and_bounded ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/visual_pipeline.rs (target/debug/deps/visual_pipeline-8e72431a993b0bc1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests musicterrain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

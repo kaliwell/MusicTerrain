@@ -22,9 +22,10 @@ pub enum SceneBiome {
     Badlands,
     Savanna,
     Swamp,
+    Jungle,
 }
 impl SceneBiome {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Meadow,
         Self::Forest,
         Self::Alpine,
@@ -35,6 +36,7 @@ impl SceneBiome {
         Self::Badlands,
         Self::Savanna,
         Self::Swamp,
+        Self::Jungle,
     ];
     pub const fn name(self) -> &'static str {
         match self {
@@ -48,6 +50,7 @@ impl SceneBiome {
             Self::Badlands => "badlands",
             Self::Savanna => "savanna",
             Self::Swamp => "swamp",
+            Self::Jungle => "jungle",
         }
     }
     pub fn parse(name: &str) -> Option<Self> {
@@ -79,6 +82,8 @@ pub enum DecorationKind {
     BirchTree,
     SpruceTree,
     AcaciaTree,
+    JungleTree,
+    Fern,
     Cactus,
     DeadBush,
     TallGrass,
@@ -177,6 +182,8 @@ impl Ecology {
                 SceneBiome::Badlands
             } else if climate < 0.2 {
                 SceneBiome::Desert
+            } else if climate > 0.45 {
+                SceneBiome::Jungle
             } else {
                 SceneBiome::Savanna
             }
@@ -208,7 +215,8 @@ impl Ecology {
             SceneBiome::Meadow
             | SceneBiome::Forest
             | SceneBiome::BirchForest
-            | SceneBiome::Savanna => (SurfaceKind::Grass, SurfaceKind::Dirt, 3),
+            | SceneBiome::Savanna
+            | SceneBiome::Jungle => (SurfaceKind::Grass, SurfaceKind::Dirt, 3),
         };
         SurfaceProfile {
             biome,
@@ -232,6 +240,7 @@ impl Ecology {
         }
         let threshold = match self.biome(x, z, height) {
             SceneBiome::Forest | SceneBiome::BirchForest | SceneBiome::Taiga => 78,
+            SceneBiome::Jungle => 96,
             SceneBiome::Swamp => 58,
             SceneBiome::Savanna => 42,
             SceneBiome::Meadow => 32,
@@ -256,10 +265,12 @@ impl Ecology {
                 SceneBiome::BirchForest => DecorationKind::BirchTree,
                 SceneBiome::Taiga => DecorationKind::SpruceTree,
                 SceneBiome::Savanna => DecorationKind::AcaciaTree,
+                SceneBiome::Jungle => DecorationKind::JungleTree,
                 _ => DecorationKind::OakTree,
             },
             event_id: id,
             scale: match self.biome(x, z, height) {
+                SceneBiome::Jungle => 12,
                 SceneBiome::Taiga => 8,
                 SceneBiome::BirchForest => 6,
                 _ => 4,
@@ -329,6 +340,13 @@ impl Ecology {
                             DecorationKind::Cactus
                         } else {
                             DecorationKind::DeadBush
+                        }
+                    }
+                    SceneBiome::Jungle => {
+                        if (id >> 24).is_multiple_of(3) {
+                            DecorationKind::TallGrass
+                        } else {
+                            DecorationKind::Fern
                         }
                     }
                     SceneBiome::Taiga => DecorationKind::Rock,

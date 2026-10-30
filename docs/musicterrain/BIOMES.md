@@ -1,6 +1,6 @@
 # Preview biomes
 
-MusicTerrain now has ten preview biomes. These are seeded, original scene rules,
+MusicTerrain now has eleven preview biomes. These are seeded, original scene rules,
 not a port of Minecraft's biome registry or vanilla feature placement.
 
 ![Six new biomes in the running editor](images/biomes/comparison.png)
@@ -21,14 +21,18 @@ birch forest, taiga, desert, badlands, savanna, swamp. Only the biome selector c
 | Badlands / `badlands` | Red sand / 12-block terracotta subsoil | Cacti and dead bushes |
 | Savanna / `savanna` | Grass / dirt | Sparse acacias, gray bark, warm leaves, flat wide crowns, grass |
 | Swamp / `swamp` | Grass / clay | Oaks, flowers and clay exposed around existing ponds and caves |
+| Jungle / `jungle` | Grass / dirt | Dense 12–14-block jungle trees with 2×2 trunks, broad crowns, hanging vines and fern understory |
+
+![Tropical jungle in the actual editor](images/biomes/biome-jungle.png)
 
 ## Use
 
-Open **Settings** and click **BIOME AUTO** to cycle through the ten biomes and
+Open **Settings** and click **BIOME AUTO** to cycle through the eleven biomes and
 back to automatic distribution. Each change increments the generation revision;
 older jobs cannot overwrite the selection, and biome is part of the mesh cache key.
 
 ```sh
+cargo run -p musicterrain -- demo --biome jungle
 cargo run -p musicterrain -- demo --biome desert
 cargo run -p musicterrain -- demo --biome taiga
 cargo run -p musicterrain -- preview --audio song.wav --biome birch-forest
@@ -45,7 +49,8 @@ JSON; restart with `--biome` to restore it. Scene switches currently have no und
 Automatic selection uses Horizon's seeded Simplex noise for moisture (0.011 per
 block) and a decorrelated temperature sample (0.006 per block). Water-adjacent
 heights at or below 9 choose Shore, and sufficiently high ground chooses Alpine.
-The remaining temperature/moisture thresholds select the eight lowland types.
+Hot regions with moisture above 0.45 choose Jungle.
+The remaining temperature/moisture thresholds select the nine lowland types.
 A forced selection overrides climate and altitude, while actual low water banks
 retain sand. No wall clock, callback order or worker scheduling enters ecology.
 
@@ -55,11 +60,17 @@ this update does not implement separate biome terrain-height rules, swamp water
 simulation, animal entities, collision or persistent Minecraft saves.
 
 All trees fit the existing radius-3 query halo; spruce trunks are 8–10 blocks,
-birch trunks 6–8, oak/acacia trunks 4–6. Shared edge anchors keep stable event IDs.
+birch trunks 6–8, oak/acacia trunks 4–6, jungle trunks 12–14.
+Jungle uses a 96% tree-cell acceptance rate versus Forest's 78%; slope, cave
+and water safety checks still apply. Jungle crown radius remains three blocks;
+four seeded vine strands hang 3–6 cells beneath the canopy. Vines use crossed
+cutout planes, not Minecraft's attachment block states or climbing physics.
+Shared edge anchors keep stable event IDs.
 Decoration requests retain their 256-block limit and bounded world-cell grids.
 
 Fourteen original pixel-art layers were appended to the original 17 material IDs,
-so older indices retain their meaning. Birch/spruce/acacia trunks and leaves,
+so older indices retain their meaning. The jungle update appends another five
+layers (36 total): jungle bark, end grain, leaves, vine and fern. Birch/spruce/acacia trunks and leaves,
 red sand, terracotta, podzol, cactus and dead bush also accept matching local PNGs.
 No proprietary textures are included.
 
@@ -67,7 +78,7 @@ No proprietary textures are included.
 
 The added tests cover automatic reachability of every lowland biome, seed
 repeatability/difference, species and soil contracts, whole/tiled layout equality
-for all six new biomes, distinct real material meshes and repeated checksums.
+for all seven added biomes, distinct real material meshes and repeated checksums.
 The X11 harness accepts `--biomes` to click every selection, wait for real mesh
 uploads and capture screenshots; it also restores Auto. Results are recorded in
 [TEST_REPORT](TEST_REPORT.md).

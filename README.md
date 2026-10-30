@@ -7,10 +7,10 @@
 
 当前已实现可交互 demo：WAV / MP3 / FLAC 导入、FFT 与频段映射、音乐驱动
 三维地形、Noise Lab、映射编辑、七个预设、参数撤销重做及性能诊断。
-默认场景包含 31 种原创像素材质、草地/泥土/岩石地层、树木花草、池塘、
+默认场景包含 36 种原创像素材质、草地/泥土/岩石地层、树木花草、池塘、
 矿石和真实洞穴；也可通过 `--resources` 加载本地资源包目录。
-新增桦木林、针叶林、沙漠、恶地、热带草原和沼泽，现有 10 种群落。
-在 Settings 切换群落，或启动时加 `--biome desert`。
+新增桦木林、针叶林、沙漠、恶地、热带草原和沼泽，现有 11 种群落（含热带丛林）。
+在 Settings 切换群落，或启动时加 `--biome jungle` / `--biome desert`。
 [查看群落实际对比图](docs/musicterrain/BIOMES.md)。
 独立预览无需 Minecraft 专有资源。
 
@@ -24,7 +24,7 @@ cargo run -p musicterrain -- preview --audio /path/to/song.wav
 [性能实测](docs/musicterrain/PERFORMANCE.md) ·
 [当前限制](docs/musicterrain/KNOWN_ISSUES.md)
 
-MusicTerrain 测试 63 项通过，格式、Clippy 和构建通过。
+MusicTerrain 测试 65 项通过，格式、Clippy 和构建通过。
 原生画面已在 Linux 软件 Vulkan 上验证；实体音频设备和 Windows 尚待实机验收。
 Horizon 游戏菜单接入、系统声音采集和 Minecraft 世界存档导出尚未实现。
 

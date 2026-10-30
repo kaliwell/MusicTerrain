@@ -232,6 +232,11 @@ fn selected_biomes_have_specific_surfaces_species_and_order_independent_layouts(
             DecorationKind::AcaciaTree,
         ),
         (
+            SceneBiome::Jungle,
+            SurfaceKind::Grass,
+            DecorationKind::JungleTree,
+        ),
+        (
             SceneBiome::Swamp,
             SurfaceKind::Grass,
             DecorationKind::OakTree,
@@ -260,4 +265,35 @@ fn selected_biomes_have_specific_surfaces_species_and_order_independent_layouts(
         }
         assert_eq!(whole, tiles, "tile seam in {biome:?}");
     }
+}
+
+#[test]
+fn jungle_has_tall_dense_trees_and_fern_understory_without_flowers_or_cacti() {
+    let jungle = Ecology::new(42).with_biome(Some(SceneBiome::Jungle));
+    let forest = Ecology::new(42).with_biome(Some(SceneBiome::Forest));
+    let layout = jungle.decorations([-64, -64], 128, |_, _| 25.0);
+    let trees = layout
+        .iter()
+        .filter(|d| d.kind == DecorationKind::JungleTree)
+        .count();
+    let ordinary = forest
+        .decorations([-64, -64], 128, |_, _| 25.0)
+        .iter()
+        .filter(|d| d.kind == DecorationKind::OakTree)
+        .count();
+    assert!(
+        trees > ordinary,
+        "jungle should be denser than ordinary forest"
+    );
+    assert!(layout.iter().any(|d| d.kind == DecorationKind::Fern));
+    for decoration in &layout {
+        assert!(matches!(
+            decoration.kind,
+            DecorationKind::JungleTree | DecorationKind::Fern | DecorationKind::TallGrass
+        ));
+        if decoration.kind == DecorationKind::JungleTree {
+            assert!((12..=14).contains(&decoration.scale));
+        }
+    }
+    assert_eq!(layout, jungle.decorations([-64, -64], 128, |_, _| 25.0));
 }

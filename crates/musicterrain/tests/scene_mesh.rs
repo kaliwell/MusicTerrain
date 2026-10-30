@@ -271,6 +271,16 @@ fn biome_selection_changes_real_mesh_species_and_ground_without_changing_audio()
             ],
         ),
         (
+            SceneBiome::Jungle,
+            vec![
+                Material::JungleLogSide,
+                Material::JungleLogTop,
+                Material::JungleLeaves,
+                Material::Vine,
+                Material::Fern,
+            ],
+        ),
+        (
             SceneBiome::Swamp,
             vec![Material::GrassTop, Material::Clay, Material::OakLeaves],
         ),
@@ -303,4 +313,49 @@ fn biome_selection_changes_real_mesh_species_and_ground_without_changing_audio()
             mesh.vertices, mesh.scene.trees, mesh.scene.plants
         );
     }
+}
+
+#[test]
+fn jungle_vegetation_switch_removes_trunks_canopies_ferns_and_vines() {
+    use musicterrain::ecology::SceneBiome;
+    let mut snapshot = scene();
+    snapshot.parameters.amplitude = 0.;
+    snapshot.parameters.detail = 0.;
+    snapshot.parameters.base_height = 25.;
+    let options = SceneOptions {
+        biome: Some(SceneBiome::Jungle),
+        ..SceneOptions::default()
+    };
+    let grown = mesh_snapshot_with_options(&snapshot, 64, &options).unwrap();
+    let bare = mesh_snapshot_with_options(
+        &snapshot,
+        64,
+        &SceneOptions {
+            vegetation: false,
+            ..options
+        },
+    )
+    .unwrap();
+    assert!(grown.scene.trees > 0 && grown.scene.plants > 0);
+    assert_eq!((bare.scene.trees, bare.scene.plants), (0, 0));
+    for material in [
+        Material::JungleLogSide,
+        Material::JungleLogTop,
+        Material::JungleLeaves,
+        Material::Vine,
+        Material::Fern,
+    ] {
+        assert!(grown.scene.material_quads[material.layer() as usize] > 0);
+        assert_eq!(bare.scene.material_quads[material.layer() as usize], 0);
+    }
+    assert!(
+        grown
+            .sections
+            .iter()
+            .flat_map(|(_, section)| &section.solid)
+            .all(|v| v
+                .pos
+                .iter()
+                .all(|c| c.is_finite() && (0.0..=16.0).contains(c)))
+    );
 }

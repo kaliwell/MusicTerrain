@@ -27,3 +27,11 @@ Do not treat the standalone demo as an integrated playable Minecraft world.
   actual all-biome UI cycle and CLI renderer captures.
 - Not started: biome-specific terrain-height rules, animal entities, swamp
   fluid physics and persistent vanilla biome/feature integration.
+
+## Tropical jungle increment (2026-10-30)
+
+- Complete: automatic hot/humid Jungle, Settings cycle and CLI selection (11 biomes).
+- Complete: tall thick-trunk trees, broad crowns, seeded hanging vines and ferns.
+- Complete: original local-pack-compatible jungle bark, end grain, leaves, vine,
+  fern; 36 atlas layers. Actual renderer screenshots and all-biome UI checks.
+- Not started: vine climbing, animal entities, persistent-world jungle features.

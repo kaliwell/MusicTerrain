@@ -46,3 +46,12 @@
   selection in mesh cache identity and reused revision-based stale-result rejection.
 - Added automatic-distribution, tiled-ecology and real-mesh tests plus an X11
   biome-switching harness. No vanilla generator or persistent-world changes.
+
+### Tropical jungle — 2026-10-30 UTC
+
+- Added Jungle to automatic humid/hot climate selection, Settings and `--biome jungle`.
+- Added denser jungle trees with 12–14-block 2×2 trunks and broad radius-3 crowns,
+  deterministic hanging vines and fern understory. Five new original material layers;
+  36 layers total, previous material IDs preserved.
+- Extended tile/species/material/alpha and all-biome UI checks; added jungle
+  density/height and vegetation-switch tests. No climbing or world-save claim.

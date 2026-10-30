@@ -38,7 +38,7 @@ impl Default for SceneOptions {
         }
     }
 }
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SceneStats {
     pub trees: u32,
     pub plants: u32,
@@ -47,6 +47,20 @@ pub struct SceneStats {
     pub material_quads: [u32; Material::ALL.len()],
     pub solid_voxels: u32,
     pub carved_voxels: u32,
+}
+
+impl Default for SceneStats {
+    fn default() -> Self {
+        Self {
+            trees: 0,
+            plants: 0,
+            cave_faces: 0,
+            water_quads: 0,
+            material_quads: [0; Material::ALL.len()],
+            solid_voxels: 0,
+            carved_voxels: 0,
+        }
+    }
 }
 
 pub struct MeshResult {
@@ -715,29 +729,48 @@ fn decorations(
             DecorationKind::OakTree
             | DecorationKind::BirchTree
             | DecorationKind::SpruceTree
-            | DecorationKind::AcaciaTree => {
+            | DecorationKind::AcaciaTree
+            | DecorationKind::JungleTree => {
                 let (log, leaves) = match decoration.kind {
                     DecorationKind::BirchTree => (Material::BirchLogSide, Material::BirchLeaves),
                     DecorationKind::SpruceTree => (Material::SpruceLogSide, Material::SpruceLeaves),
                     DecorationKind::AcaciaTree => (Material::AcaciaLogSide, Material::AcaciaLeaves),
+                    DecorationKind::JungleTree => (Material::JungleLogSide, Material::JungleLeaves),
                     _ => (Material::OakLogSide, Material::OakLeaves),
                 };
                 let trunk = i32::from(decoration.scale);
                 let mut emitted = false;
                 for dy in 0..trunk {
-                    let p = [x, y + dy, z];
-                    if inside(p) && volume.world_get(p) == 0 {
-                        blocks.insert(p, log);
-                        emitted = true;
+                    let offsets: &[(i32, i32)] = if decoration.kind == DecorationKind::JungleTree {
+                        &[(0, 0), (1, 0), (0, 1), (1, 1)]
+                    } else {
+                        &[(0, 0)]
+                    };
+                    // Clip every trunk cell independently: a shared anchor can lie
+                    // just outside this region while its thick trunk intersects it.
+                    for &(dx, dz) in offsets {
+                        let p = [x + dx, y + dy, z + dz];
+                        if inside(p) && volume.world_get(p) == 0 {
+                            blocks.insert(p, log);
+                            emitted = true;
+                        }
                     }
                 }
                 let (bottom, top) = match decoration.kind {
+                    DecorationKind::JungleTree => (trunk - 5, trunk + 1),
                     DecorationKind::SpruceTree => (2, trunk + 1),
                     DecorationKind::AcaciaTree => (trunk - 1, trunk),
                     _ => (trunk - 2, trunk + 1),
                 };
                 for dy in bottom..=top {
                     let radius: i32 = match decoration.kind {
+                        DecorationKind::JungleTree => {
+                            if dy >= trunk {
+                                2
+                            } else {
+                                3
+                            }
+                        }
                         DecorationKind::SpruceTree => ((trunk + 1 - dy) / 3 + 1).min(3),
                         DecorationKind::AcaciaTree => 3 - (dy - bottom),
                         _ => {
@@ -764,6 +797,20 @@ fn decorations(
                         }
                     }
                 }
+                if decoration.kind == DecorationKind::JungleTree {
+                    for (side, (dx, dz)) in
+                        [(3, 0), (-3, 0), (0, 3), (0, -3)].into_iter().enumerate()
+                    {
+                        let length =
+                            3 + (decoration.event_id.rotate_right(side as u32 * 8) % 4) as i32;
+                        for offset in 1..=length {
+                            let p = [x + dx, y + bottom - offset, z + dz];
+                            if inside(p) && volume.world_get(p) == 0 {
+                                plants.push((p, Material::Vine));
+                            }
+                        }
+                    }
+                }
                 if emitted {
                     builder.scene.trees += 1;
                 }
@@ -771,9 +818,11 @@ fn decorations(
             DecorationKind::TallGrass
             | DecorationKind::Poppy
             | DecorationKind::Dandelion
-            | DecorationKind::DeadBush => {
+            | DecorationKind::DeadBush
+            | DecorationKind::Fern => {
                 if inside([x, y, z]) {
                     let material = match decoration.kind {
+                        DecorationKind::Fern => Material::Fern,
                         DecorationKind::DeadBush => Material::DeadBush,
                         DecorationKind::Poppy => Material::Poppy,
                         DecorationKind::Dandelion => Material::Dandelion,
@@ -886,6 +935,7 @@ impl Face {
             (Material::BirchLogSide, Self::Up | Self::Down) => Material::BirchLogTop,
             (Material::SpruceLogSide, Self::Up | Self::Down) => Material::SpruceLogTop,
             (Material::AcaciaLogSide, Self::Up | Self::Down) => Material::AcaciaLogTop,
+            (Material::JungleLogSide, Self::Up | Self::Down) => Material::JungleLogTop,
             _ => material,
         }
     }
