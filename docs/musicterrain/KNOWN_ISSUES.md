@@ -12,11 +12,17 @@
   already queued in the hardware device.
 - The explicit silent diagnostic preview uses a software clock and outputs no sound.
   Without a device, normal mode shows an error and leaves the preview paused.
-- Preview meshes update asynchronously, capped near 15 Hz with adaptive delay;
+- Preview meshes update asynchronously, targeting up to 60 Hz with adaptive delay;
   rendering is independent. No continuous WGSL vertex deformation is implemented.
-- 128/256 previews deliberately reduce voxel detail. Caves/islands use a bounded,
-  coarser density volume, not full-resolution persistent chunks.
+- Full detail preserves one-block voxels at 64/128/256; adaptive detail optionally
+  reduces resolution. Large full-detail scenes cost more CPU/memory and can update
+  much slower than the display. These are bounded previews, not persistent chunks.
 - OpenSimplex is not implemented; the menu accurately names Horizon Simplex.
+- Preview W animation reshapes analytic cave intervals with a continuous 4D field;
+  it is not Minecraft's vanilla cave noise router. Voxel occupancy still changes
+  in whole blocks. Larger/density scenes can update more slowly while W advances.
+- Orthographic preview uses a flat sky background without perspective clouds.
+  Orbit/projection/zoom are session controls, not part of saved visualization presets.
 - Structure density and particle intensity are reserved parameters; their controls
   must not imply that event structures or dynamic particles already exist.
 - Audio decoding is capped at 20 minutes of PCM. Import is bounded and shutdown
@@ -43,8 +49,8 @@
 
 - Rich ecology and villages reference Minecraft's visual vocabulary using original
   templates/materials; exact vanilla feature/jigsaw parity is not implemented.
-- Villages are suspended in the island/strong-density path. 128/256 extents also suspend villages, with a Settings notice;
-  use 64×64 to retain one-block walls and interiors. Steep musical terrain may reject plots or expose
+- Villages are suspended in the floating-island density path and in coarse adaptive previews, with a Settings notice;
+  use Full Detail to retain one-block walls and interiors. Steep musical terrain may reject plots or expose
   tall foundations. Showcase is world-origin anchored, not camera-relative.
 - Village houses/crops/wells are visible geometry. Villager/animal entities,
   crop growth, climbing, collision and persistent-world integration are absent.
@@ -53,7 +59,7 @@
 
 - Underground preview remains Y0..128, with deepslate based on sampled depth.
   Its cave/low-aquifer/mine algorithms are original, not vanilla noise-router parity.
-- Detailed mines require a 64×64 height-field path; coarse/density previews suspend
+- Detailed mines require a one-block height-field path; coarse/density previews suspend
   them. Underground view is a fixed Y10 horizontal slice, not a movable slice slider.
 - Amethyst is a decorative outcrop, not a full geode structure. Lanterns/lichen
   are visual details without emitted block light. No minecarts, loot, spawners,

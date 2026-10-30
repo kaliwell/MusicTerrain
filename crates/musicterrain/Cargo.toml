@@ -8,10 +8,11 @@ description = "Opt-in music driven terrain and Noise Lab using Horizon"
 
 [features]
 default = ["native", "audio-output"]
-native = ["dep:horizon-client-render", "dep:horizon-theme", "dep:winit", "dep:glam", "dep:pollster"]
+native = ["dep:horizon-client-render", "dep:horizon-theme", "dep:winit", "dep:glam", "dep:pollster", "dep:ab_glyph"]
 audio-output = ["dep:cpal"]
 
 [dependencies]
+ab_glyph = { version = "0.2.32", optional = true }
 horizon-core = { path = "../horizon-core" }
 horizon-client-render = { path = "../horizon-client-render", optional = true }
 horizon-theme = { path = "../horizon-theme", optional = true }

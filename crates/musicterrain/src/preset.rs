@@ -101,6 +101,11 @@ fn default_mappings() -> MappingGraph {
     onset.attack = 0.0;
     onset.release = 0.2;
     rules.push(onset);
+    let mut cave_w = MappingRule::band(1, TargetParameter::CaveW, [0.0, 2.0]);
+    cave_w.source = AudioSource::Rms;
+    cave_w.attack = 0.18;
+    cave_w.release = 0.4;
+    rules.push(cave_w);
     let mut rms = MappingRule::band(0, TargetParameter::EffectIntensity, [0.25, 1.0]);
     rms.source = AudioSource::Rms;
     rms.combine = CombineMode::Multiply;

@@ -5,7 +5,7 @@ use crate::{
     mapping::{AudioSource, CombineMode, MappingState, ResponseCurve},
     preset::{VisualizationPreset, builtins},
     renderer::PreviewRenderer,
-    terrain::{GenerationRevision, NoiseType, TerrainParameters, TerrainSnapshot},
+    terrain::{GenerationRevision, TerrainParameters, TerrainSnapshot},
     transport::Transport,
     ui::{Action, Diagnostics, Page, RuleField, Ui, View},
     visual::{MeshWorker, SceneOptions, SceneStats},
@@ -32,6 +32,7 @@ use winit::{
 };
 
 pub struct PreviewOptions {
+    pub language: Option<crate::localization::Language>,
     pub resources: Option<PathBuf>,
     pub scene_options: SceneOptions,
     pub audio_path: Option<PathBuf>,
@@ -41,10 +42,15 @@ pub struct PreviewOptions {
     pub screenshot: Option<PathBuf>,
     pub silent_preview: bool,
     pub size: u32,
+    pub orbit: bool,
+    pub orthographic: bool,
+    pub noise: Option<crate::terrain::NoiseType>,
+    pub cave_w: Option<f32>,
 }
 impl Default for PreviewOptions {
     fn default() -> Self {
         Self {
+            language: None,
             resources: None,
             scene_options: SceneOptions::default(),
             audio_path: None,
@@ -54,6 +60,10 @@ impl Default for PreviewOptions {
             screenshot: None,
             silent_preview: false,
             size: 64,
+            orbit: false,
+            orthographic: false,
+            noise: None,
+            cave_w: None,
         }
     }
 }
@@ -169,6 +179,10 @@ struct App {
     camera: DVec3,
     yaw: f32,
     pitch: f32,
+    orbit: bool,
+    orthographic: bool,
+    orbit_radius: f64,
+    orthographic_span: f32,
     spectrum: bool,
     offset: f32,
     revision: GenerationRevision,
@@ -179,6 +193,7 @@ struct App {
     previous: Instant,
     started: Instant,
     fps: f32,
+    mesh_hz: f32,
     generation_ms: f32,
     frames: u64,
     meshes: u64,
@@ -190,22 +205,38 @@ struct App {
     music_overlay: bool,
     report_since: Instant,
     report_frames: u64,
+    report_meshes: u64,
     report_sum_ms: f64,
     report_max_ms: f64,
+    report_intervals: Vec<f64>,
     scene: SceneStats,
 }
 impl App {
     fn new(options: PreviewOptions) -> Result<Self, Box<dyn Error>> {
         let presets = builtins();
-        let preset = presets[0].clone();
+        let mut preset = presets[0].clone();
+        if let Some(noise) = options.noise {
+            preset.parameters.noise_type = noise;
+        }
+        if let Some(w) = options.cave_w {
+            preset.parameters.cave_w = w;
+        }
+        preset.parameters.validate()?;
         let loader = Loader::new()?;
         loader.submit(options.audio_path.clone());
         let now = Instant::now();
-        Ok(Self {
+        let mut ui = Ui::default();
+        if let Some(language) = options.language {
+            ui.language = language;
+        }
+        let camera_scale = f64::from(options.size) / 64.0;
+        let orbit = options.orbit;
+        let orthographic = options.orthographic;
+        let mut app = Self {
             options,
             window: None,
             renderer: None,
-            ui: Ui::default(),
+            ui,
             loader,
             worker: MeshWorker::new(),
             loaded: None,
@@ -222,9 +253,13 @@ impl App {
             right_mouse: false,
             dragging: false,
             keys: HashSet::new(),
-            camera: DVec3::new(62., 48., 75.),
+            camera: DVec3::new(62., 48., 75.) * camera_scale,
             yaw: 140.,
             pitch: 26.,
+            orbit,
+            orthographic,
+            orbit_radius: 100.0 * camera_scale,
+            orthographic_span: 110.0 * camera_scale as f32,
             spectrum: true,
             offset: 0.,
             revision: GenerationRevision(1),
@@ -235,6 +270,7 @@ impl App {
             previous: now,
             started: now,
             fps: 60.,
+            mesh_hz: 0.0,
             generation_ms: 0.,
             frames: 0,
             meshes: 0,
@@ -246,10 +282,40 @@ impl App {
             music_overlay: false,
             report_since: now,
             report_frames: 0,
+            report_meshes: 0,
             report_sum_ms: 0.,
             report_max_ms: 0.,
+            report_intervals: Vec::with_capacity(240),
             scene: SceneStats::default(),
-        })
+        };
+        if orbit {
+            app.aim_at_center();
+        }
+        Ok(app)
+    }
+    fn center(&self) -> DVec3 {
+        DVec3::new(0.0, 16.0, 0.0)
+    }
+    fn aim_at_center(&mut self) {
+        let delta = self.camera - self.center();
+        self.orbit_radius = delta.length().clamp(8.0, 2048.0);
+        self.yaw = delta.x.atan2(-delta.z).to_degrees() as f32;
+        self.pitch = (delta.y / delta.length().max(0.001))
+            .clamp(-1.0, 1.0)
+            .asin()
+            .to_degrees() as f32;
+    }
+    fn zoom(&mut self, lines: f32) {
+        let factor = (-f64::from(lines.clamp(-10.0, 10.0)) * 0.12).exp();
+        if self.orthographic {
+            self.orthographic_span =
+                (f64::from(self.orthographic_span) * factor).clamp(8.0, 4096.0) as f32;
+        } else {
+            let delta = self.camera - self.center();
+            let radius = (delta.length() * factor).clamp(8.0, 2048.0);
+            self.camera = self.center() + delta.normalize_or_zero() * radius;
+            self.orbit_radius = radius;
+        }
     }
     fn position(&self) -> f64 {
         self.transport.as_ref().map_or(0., Transport::position)
@@ -314,6 +380,43 @@ impl App {
             self.history();
         }
         match a {
+            Action::Orbit => {
+                self.orbit = !self.orbit;
+                if self.orbit {
+                    self.aim_at_center();
+                }
+            }
+            Action::Projection => {
+                self.orthographic = !self.orthographic;
+                if self.orthographic {
+                    self.orthographic_span = ((self.camera - self.center()).length()
+                        * 2.0
+                        * (32.5_f64.to_radians()).tan())
+                    .clamp(8.0, 4096.0) as f32;
+                } else {
+                    let delta = self.camera - self.center();
+                    self.orbit_radius = (f64::from(self.orthographic_span)
+                        / (2.0 * 32.5_f64.to_radians().tan()))
+                    .clamp(8.0, 2048.0);
+                    self.camera = self.center() + delta.normalize_or_zero() * self.orbit_radius;
+                }
+            }
+            Action::Shape => {
+                self.options.scene_options.shape = self.options.scene_options.shape.next();
+                self.revision.0 += 1;
+                self.dirty = true;
+            }
+            Action::Detail => {
+                self.options.scene_options.full_detail = !self.options.scene_options.full_detail;
+                self.revision.0 += 1;
+                self.dirty = true;
+            }
+            Action::Language => {
+                self.ui.language = self.ui.language.toggle();
+                if let Err(e) = self.ui.language.save() {
+                    self.status = format!("Could not save language preference: {e}");
+                }
+            }
             Action::Page(p) => {
                 self.page = p;
                 self.ui.scroll = 0;
@@ -385,6 +488,10 @@ impl App {
                 self.dirty = true;
             }
             Action::Resolution(s) => {
+                let ratio = f64::from(s) / f64::from(self.options.size);
+                self.camera = self.center() + (self.camera - self.center()) * ratio;
+                self.orbit_radius *= ratio;
+                self.orthographic_span *= ratio as f32;
                 self.options.size = s;
                 self.revision.0 += 1;
                 self.dirty = true;
@@ -394,12 +501,7 @@ impl App {
                 self.changed();
             }
             Action::NoiseType => {
-                self.preset.parameters.noise_type = match self.preset.parameters.noise_type {
-                    NoiseType::Perlin => NoiseType::Simplex,
-                    NoiseType::Simplex => NoiseType::Fbm,
-                    NoiseType::Fbm => NoiseType::Ridged,
-                    NoiseType::Ridged => NoiseType::Perlin,
-                };
+                self.preset.parameters.noise_type = self.preset.parameters.noise_type.next();
                 self.changed();
             }
             Action::Octaves => {
@@ -578,6 +680,7 @@ impl App {
             self.report_frames += 1;
             self.report_sum_ms += ms;
             self.report_max_ms = self.report_max_ms.max(ms);
+            self.report_intervals.push(ms);
         }
         if let Some(result) = self.loader.receive.as_ref().and_then(|r| r.try_recv().ok()) {
             match result {
@@ -622,9 +725,7 @@ impl App {
         if self.transport.as_ref().is_some_and(Transport::failed) {
             self.status = "AUDIO DEVICE FAILED - PLAYBACK STOPPED".into();
         }
-        let yaw = f64::from(self.yaw).to_radians();
-        let forward = DVec3::new(-yaw.sin(), 0., yaw.cos());
-        let right = DVec3::new(yaw.cos(), 0., yaw.sin());
+        let (forward, right) = movement_axes(self.yaw);
         let mut movement = DVec3::ZERO;
         for key in &self.keys {
             movement += match key {
@@ -637,7 +738,14 @@ impl App {
                 _ => DVec3::ZERO,
             };
         }
-        self.camera += movement.normalize_or_zero() * f64::from(dt) * 45.;
+        if movement.length_squared() > 0.0 {
+            self.orbit = false;
+            self.camera += movement.normalize_or_zero() * f64::from(dt) * 45.;
+        }
+        if self.orbit {
+            self.yaw = (self.yaw + dt * 10.0).rem_euclid(360.0);
+            self.camera = self.center() + orbit_offset(self.yaw, self.pitch, self.orbit_radius);
+        }
         let position = self.position();
         let audio_time = (position + f64::from(self.offset)).max(0.);
         let features = self
@@ -645,7 +753,7 @@ impl App {
             .as_ref()
             .map(|l| l.timeline.at(audio_time))
             .unwrap_or_default();
-        let parameters = if self.page == Page::Noise && !self.music_overlay {
+        let mut parameters = if self.page == Page::Noise && !self.music_overlay {
             self.preset.parameters.clone()
         } else {
             let index = self.loaded.as_ref().map_or(0, |l| {
@@ -660,16 +768,25 @@ impl App {
                 .cloned()
                 .unwrap_or_else(|| self.preset.parameters.clone())
         };
-        let interval = Duration::from_secs_f32((self.generation_ms * 0.00125).clamp(0.067, 0.5));
+        if self.page != Page::Noise || self.music_overlay {
+            parameters.cave_w = ((f64::from(parameters.cave_w)
+                + audio_time * f64::from(parameters.cave_speed)
+                + 128.0)
+                .rem_euclid(256.0)
+                - 128.0) as f32;
+        }
+        let mesh_parameters = parameters.clone();
+        let interval =
+            Duration::from_secs_f32((self.generation_ms * 0.00125).clamp(1.0 / 60.0, 0.5));
         if self.last_submit.elapsed() >= interval
             && (self.dirty
-                || self.last_parameters.as_ref() != Some(&parameters)
-                || (parameters.shockwave > 0.0 && (audio_time - self.last_audio).abs() > 0.03))
+                || self.last_parameters.as_ref() != Some(&mesh_parameters)
+                || (mesh_parameters.shockwave > 0.0 && (audio_time - self.last_audio).abs() > 0.03))
         {
             let snapshot = TerrainSnapshot {
                 revision: self.revision,
                 seed: self.preset.seed,
-                parameters: parameters.clone(),
+                parameters: mesh_parameters.clone(),
                 audio_time,
             };
             if self.worker.submit_with_options(
@@ -679,7 +796,7 @@ impl App {
             ) {
                 self.last_submit = now;
                 self.last_audio = audio_time;
-                self.last_parameters = Some(parameters.clone());
+                self.last_parameters = Some(mesh_parameters.clone());
                 self.dirty = false;
             }
         }
@@ -706,7 +823,7 @@ impl App {
                 }
                 self.upload_ms = upload_started.elapsed().as_secs_f32() * 1000.0;
             }
-            tracing::info!(
+            tracing::debug!(
                 mesh_hash = hash,
                 audio_time = self.last_mesh_audio,
                 generation_ms = self.generation_ms,
@@ -738,6 +855,7 @@ impl App {
             }
             r.renderer.gpu_times.clear();
             Diagnostics {
+                mesh_hz: self.mesh_hz,
                 submitted: self.worker.submitted,
                 completed: self.worker.completed,
                 dropped: self.worker.dropped,
@@ -756,11 +874,21 @@ impl App {
         let report_elapsed = now.duration_since(self.report_since).as_secs_f64();
         if report_elapsed >= 1.0 && self.report_frames > 0 {
             // Match the visible FPS to the measured one-second frame count.
+            self.report_intervals.sort_unstable_by(f64::total_cmp);
+            let p95 = self.report_intervals
+                [(self.report_intervals.len() * 95 / 100).min(self.report_intervals.len() - 1)];
+            let p99 = self.report_intervals
+                [(self.report_intervals.len() * 99 / 100).min(self.report_intervals.len() - 1)];
             self.fps = self.report_frames as f32 / report_elapsed as f32;
+            self.mesh_hz =
+                self.meshes.saturating_sub(self.report_meshes) as f32 / report_elapsed as f32;
             tracing::info!(
                 frame_ms_mean = self.report_sum_ms / self.report_frames as f64,
                 frame_ms_max = self.report_max_ms,
+                frame_ms_p95 = p95,
+                frame_ms_p99 = p99,
                 fps = self.report_frames as f64 / report_elapsed,
+                mesh_hz = self.meshes.saturating_sub(self.report_meshes) as f64 / report_elapsed,
                 frames = self.report_frames,
                 queued_jobs = self.worker.queued_jobs(),
                 busy = self.worker.busy(),
@@ -772,9 +900,11 @@ impl App {
                 "preview performance"
             );
             self.report_since = now;
+            self.report_meshes = self.meshes;
             self.report_frames = 0;
             self.report_sum_ms = 0.;
             self.report_max_ms = 0.;
+            self.report_intervals.clear();
         }
         let hud = self.ui.draw(
             [size.width, size.height],
@@ -804,6 +934,8 @@ impl App {
                     "AUDIO OUTPUT CLOCK"
                 },
                 music_overlay: self.music_overlay,
+                orbit: self.orbit,
+                orthographic: self.orthographic,
                 effective_parameters: &parameters,
                 scene_options: self.options.scene_options,
                 scene: &self.scene,
@@ -819,7 +951,14 @@ impl App {
             r.renderer.screenshot = self.options.screenshot.clone();
         }
         if let Some(r) = &mut self.renderer
-            && let Err(e) = r.draw(self.camera, self.yaw, self.pitch, &hud, audio_time)
+            && let Err(e) = r.draw(
+                self.camera,
+                self.yaw,
+                self.pitch,
+                &hud,
+                audio_time,
+                self.orthographic.then_some(self.orthographic_span),
+            )
         {
             self.error = Some(e.to_string());
             event_loop.exit();
@@ -933,20 +1072,22 @@ impl ApplicationHandler for App {
             WindowEvent::MouseWheel { delta, .. } => {
                 let y = match delta {
                     MouseScrollDelta::LineDelta(_, y) => y,
-                    MouseScrollDelta::PixelDelta(p) => p.y as f32,
+                    MouseScrollDelta::PixelDelta(p) => p.y as f32 / 40.0,
                 };
-                if self.cursor[0]
-                    > self
-                        .window
-                        .as_ref()
-                        .map_or(1000., |w| w.inner_size().width as f32)
-                        - 278.
-                {
+                let size = self.window.as_ref().map_or([1280.0, 800.0], |w| {
+                    [w.inner_size().width as f32, w.inner_size().height as f32]
+                });
+                if self.cursor[0] > size[0] - 278.0 {
                     if y < 0. {
                         self.ui.scroll = (self.ui.scroll + 1).min(127);
                     } else {
                         self.ui.scroll = self.ui.scroll.saturating_sub(1);
                     }
+                } else if self.cursor[0] > 196.0
+                    && self.cursor[1] > 66.0
+                    && self.cursor[1] < size[1] - 123.0
+                {
+                    self.zoom(y);
                 }
             }
             WindowEvent::KeyboardInput { event, .. } => {
@@ -987,9 +1128,7 @@ impl ApplicationHandler for App {
         }
     }
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        event_loop.set_control_flow(ControlFlow::WaitUntil(
-            Instant::now() + Duration::from_millis(16),
-        ));
+        event_loop.set_control_flow(ControlFlow::Wait);
         if let Some(w) = &self.window {
             w.request_redraw();
         }
@@ -1006,5 +1145,48 @@ pub fn run(options: PreviewOptions) -> Result<(), Box<dyn Error>> {
         Err(error.into())
     } else {
         Ok(())
+    }
+}
+
+fn movement_axes(yaw_degrees: f32) -> (DVec3, DVec3) {
+    let yaw = f64::from(yaw_degrees).to_radians();
+    let forward = DVec3::new(-yaw.sin(), 0.0, yaw.cos());
+    (forward, forward.cross(DVec3::Y))
+}
+fn orbit_offset(yaw: f32, pitch: f32, radius: f64) -> DVec3 {
+    let yaw = f64::from(yaw).to_radians();
+    let pitch = f64::from(pitch).to_radians();
+    DVec3::new(
+        yaw.sin() * pitch.cos(),
+        pitch.sin(),
+        -yaw.cos() * pitch.cos(),
+    ) * radius
+}
+#[cfg(test)]
+mod movement_tests {
+    #[test]
+    fn orbit_keeps_radius_and_looks_at_center_from_all_angles() {
+        for yaw in [0.0, 45.0, 140.0, 270.0, 360.0] {
+            for pitch in [-45.0, 0.0, 26.0, 80.0] {
+                let delta = super::orbit_offset(yaw, pitch, 120.0);
+                assert!((delta.length() - 120.0).abs() < 1e-6);
+                let center = horizon_client_render::camera::view_matrix(yaw, pitch)
+                    .transform_vector3((-delta).as_vec3());
+                assert!(center.x.abs() < 1e-4 && center.y.abs() < 1e-4 && center.z < -119.99);
+            }
+        }
+    }
+    #[test]
+    fn horizontal_right_agrees_with_rendered_camera_at_every_heading() {
+        for yaw in [-180.0, -90.0, -15.0, 0.0, 45.0, 140.0, 270.0] {
+            let (forward, right) = super::movement_axes(yaw);
+            for pitch in [-45.0, 0.0, 45.0] {
+                let view = horizon_client_render::camera::view_matrix(yaw, pitch);
+                let screen_right = view.transform_vector3(right.as_vec3());
+                assert!(screen_right.x > 0.999, "heading={yaw} pitch={pitch}");
+                assert!(view.transform_vector3((-right).as_vec3()).x < -0.999);
+                assert!(view.transform_vector3(forward.as_vec3()).z < 0.0);
+            }
+        }
     }
 }

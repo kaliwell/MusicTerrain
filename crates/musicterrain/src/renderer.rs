@@ -72,6 +72,10 @@ impl PreviewRenderer {
             GraphicsApi::Auto,
         ))?;
         tracing::info!(adapter=%renderer.info.name, backend=?renderer.info.backend, device_type=?renderer.info.device_type, "Horizon preview renderer ready");
+        // Present real windows at the display cadence instead of filling the mailbox uncapped.
+        if !offscreen {
+            renderer.set_present_mode(true, horizon_client_render::graphics::PresentMode::Auto);
+        }
         renderer.fullbright = true;
         renderer.animated_textures = false;
         let cloud_texture = (
@@ -99,7 +103,10 @@ impl PreviewRenderer {
         pitch: f32,
         hud: &HudBatch,
         time: f64,
+        orthographic_span: Option<f32>,
     ) -> Result<bool, Box<dyn Error>> {
+        self.renderer.projection_override = orthographic_span
+            .map(|span| orthographic_projection(span, hud.width / hud.height.max(1.0)));
         let time = if time.is_finite() { time.max(0.0) } else { 0.0 };
         let ticks = (time * 20.0) as u64;
         let frame = Frame {
@@ -116,19 +123,19 @@ impl PreviewRenderer {
                 sky_light_color: [1.0; 3],
                 block_light_tint: [1.0; 3],
                 ambient_light_color: [0.6; 3],
-                fog_start: 192.0,
-                fog_end: 384.0,
-                cloud_fog_end: 384.0,
+                fog_start: 4096.0,
+                fog_end: 8192.0,
+                cloud_fog_end: 8192.0,
                 ..Sky::default()
             },
-            distance: 384.0,
-            detail_distance: 384.0,
-            depth_far: 1024.0,
+            distance: 4096.0,
+            detail_distance: 4096.0,
+            depth_far: 8192.0,
             underwater: false,
             cave_culling: false,
             title: false,
             sky_blocked: false,
-            skybox: true,
+            skybox: orthographic_span.is_none(),
             end_sky: false,
             end_sky_sprite: None,
             environment_fog: None,
@@ -151,16 +158,18 @@ impl PreviewRenderer {
             weather: &[],
             weather_time: weather::Time::new(ticks as i64, 0.0),
             dynamic_lights: &[],
-            clouds: Some(horizon_client_render::clouds::Input {
-                texture: &self.cloud_texture,
-                uv: [0.0; 2],
-                camera,
-                time: ticks as i64,
-                partial_tick: 0.0,
-                range: 8,
-                fast: true,
-                color: [1.0, 1.0, 1.0, 0.8],
-            }),
+            clouds: orthographic_span
+                .is_none()
+                .then_some(horizon_client_render::clouds::Input {
+                    texture: &self.cloud_texture,
+                    uv: [0.0; 2],
+                    camera,
+                    time: ticks as i64,
+                    partial_tick: 0.0,
+                    range: 8,
+                    fast: true,
+                    color: [1.0, 1.0, 1.0, 0.8],
+                }),
             lightning: Default::default(),
             additive: &[],
             see_through: &[],
@@ -183,5 +192,23 @@ impl PreviewRenderer {
             menu_blur: None,
         };
         self.renderer.render(&frame)
+    }
+}
+
+fn orthographic_projection(span: f32, aspect: f32) -> Mat4 {
+    let half = span * 0.5;
+    Mat4::orthographic_rh(-half * aspect, half * aspect, -half, half, 8192.0, 0.05)
+}
+
+#[cfg(test)]
+mod projection_tests {
+    use super::*;
+    #[test]
+    fn orthographic_size_is_depth_independent_and_uses_reverse_depth() {
+        let p = orthographic_projection(100.0, 2.0);
+        let near = p.project_point3(glam::Vec3::new(20.0, 10.0, -0.05));
+        let far = p.project_point3(glam::Vec3::new(20.0, 10.0, -8192.0));
+        assert!((near.x - far.x).abs() < 1e-6 && (near.y - far.y).abs() < 1e-6);
+        assert!((near.z - 1.0).abs() < 1e-5 && far.z.abs() < 1e-5);
     }
 }

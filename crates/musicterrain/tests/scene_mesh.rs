@@ -214,7 +214,15 @@ fn scene_options_participate_in_snapshot_cache_identity() {
 fn density_islands_keep_real_topology_and_materials() {
     let mut snapshot = scene();
     snapshot.parameters = builtins().remove(3).parameters;
-    let mesh = mesh_snapshot(&snapshot, 64).unwrap();
+    let mesh = mesh_snapshot_with_options(
+        &snapshot,
+        64,
+        &SceneOptions {
+            full_detail: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
     assert_eq!(mesh.voxel_step, 2);
     assert!(mesh.scene.solid_voxels > 0 && mesh.vertices > 0);
     assert!(mesh.scene.material_quads[usize::from(Material::Stone.layer())] > 0);

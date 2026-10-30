@@ -20,6 +20,31 @@ pub enum NoiseType {
     #[default]
     Fbm,
     Ridged,
+    Billow,
+    Cellular,
+    Value,
+    Terraced,
+}
+
+impl NoiseType {
+    pub const ALL: [Self; 8] = [
+        Self::Perlin,
+        Self::Simplex,
+        Self::Fbm,
+        Self::Ridged,
+        Self::Billow,
+        Self::Cellular,
+        Self::Value,
+        Self::Terraced,
+    ];
+    pub fn next(self) -> Self {
+        Self::ALL[(Self::ALL.iter().position(|n| *n == self).unwrap() + 1) % Self::ALL.len()]
+    }
+    pub fn parse(s: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|n| format!("{n:?}").eq_ignore_ascii_case(s))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -37,6 +62,8 @@ pub struct TerrainParameters {
     pub domain_warp: f32,
     pub density_threshold: f32,
     pub cave_threshold: f32,
+    pub cave_w: f32,
+    pub cave_speed: f32,
     pub ridge_strength: f32,
     pub erosion_influence: f32,
     pub structure_density: f32,
@@ -62,6 +89,8 @@ impl Default for TerrainParameters {
             domain_warp: 2.0,
             density_threshold: 0.0,
             cave_threshold: 0.78,
+            cave_w: 0.0,
+            cave_speed: 0.12,
             ridge_strength: 0.0,
             erosion_influence: 0.0,
             structure_density: 0.0,
@@ -87,6 +116,8 @@ pub enum TargetParameter {
     DomainWarp,
     DensityThreshold,
     CaveThreshold,
+    CaveW,
+    CaveSpeed,
     RidgeStrength,
     ErosionInfluence,
     StructureDensity,
@@ -98,7 +129,7 @@ pub enum TargetParameter {
     EffectIntensity,
 }
 impl TargetParameter {
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 21] = [
         Self::Frequency,
         Self::Scale,
         Self::BaseHeight,
@@ -109,6 +140,8 @@ impl TargetParameter {
         Self::DomainWarp,
         Self::DensityThreshold,
         Self::CaveThreshold,
+        Self::CaveW,
+        Self::CaveSpeed,
         Self::RidgeStrength,
         Self::ErosionInfluence,
         Self::StructureDensity,
@@ -131,6 +164,8 @@ impl TargetParameter {
             Self::DomainWarp => [0.0, 128.0],
             Self::DensityThreshold => [-64.0, 64.0],
             Self::CaveThreshold => [0.0, 1.0],
+            Self::CaveW => [-128.0, 128.0],
+            Self::CaveSpeed => [0.0, 2.0],
             Self::RidgeStrength
             | Self::ErosionInfluence
             | Self::StructureDensity
@@ -154,6 +189,8 @@ impl TargetParameter {
             Self::DomainWarp => p.domain_warp,
             Self::DensityThreshold => p.density_threshold,
             Self::CaveThreshold => p.cave_threshold,
+            Self::CaveW => p.cave_w,
+            Self::CaveSpeed => p.cave_speed,
             Self::RidgeStrength => p.ridge_strength,
             Self::ErosionInfluence => p.erosion_influence,
             Self::StructureDensity => p.structure_density,
@@ -177,6 +214,8 @@ impl TargetParameter {
             Self::DomainWarp => p.domain_warp = v,
             Self::DensityThreshold => p.density_threshold = v,
             Self::CaveThreshold => p.cave_threshold = v,
+            Self::CaveW => p.cave_w = v,
+            Self::CaveSpeed => p.cave_speed = v,
             Self::RidgeStrength => p.ridge_strength = v,
             Self::ErosionInfluence => p.erosion_influence = v,
             Self::StructureDensity => p.structure_density = v,
@@ -246,6 +285,12 @@ impl TerrainField {
         self.seed
     }
     fn noise(&self, x: f64, y: f64, z: f64, kind: NoiseType) -> f32 {
+        if kind == NoiseType::Value {
+            return crate::noise4::value(self.seed, [x, y, z, 0.0]);
+        }
+        if kind == NoiseType::Cellular {
+            return crate::noise4::cellular(self.seed, x, y, z);
+        }
         if kind == NoiseType::Simplex {
             self.simplex.get3(
                 horizon_core::noise::wrap(x),
@@ -261,13 +306,21 @@ impl TerrainField {
         let mut a = 1.0;
         let mut total = 0.0;
         let mut weight = 0.0;
-        let octaves = if matches!(p.noise_type, NoiseType::Perlin | NoiseType::Simplex) {
+        let octaves = if matches!(
+            p.noise_type,
+            NoiseType::Perlin | NoiseType::Simplex | NoiseType::Cellular | NoiseType::Value
+        ) {
             1
         } else {
             p.octaves
         };
         for _ in 0..octaves {
-            let n = self.noise(x * f, y * f, z * f, p.noise_type);
+            let raw = self.noise(x * f, y * f, z * f, p.noise_type);
+            let n = match p.noise_type {
+                NoiseType::Billow => raw.abs() * 2.0 - 1.0,
+                NoiseType::Terraced => (raw * 6.0).floor() / 6.0,
+                _ => raw,
+            };
             let ridge = 1.0 - 2.0 * n.abs();
             let mix = if p.noise_type == NoiseType::Ridged {
                 1.0
@@ -313,7 +366,7 @@ impl TerrainField {
         let p = p.clamped();
         let surface = self.height(x, z, &p);
         let f = f64::from(p.frequency / p.scale) * 2.5;
-        let cave = self
+        let mut cave = self
             .simplex
             .get3(
                 horizon_core::noise::wrap(x * f),
@@ -322,6 +375,13 @@ impl TerrainField {
             )
             .abs()
             .min(1.0);
+        if p.cave_w != 0.0 {
+            cave = (cave
+                + (crate::noise4::value(self.seed, [x * f, y * f, z * f, f64::from(p.cave_w)])
+                    - crate::noise4::value(self.seed, [x * f, y * f, z * f, 0.0]))
+                    * 0.5)
+                .clamp(0.0, 1.0);
+        }
         let ground = surface - y as f32 - p.density_threshold;
         let carved = if y < (f64::from(surface) - 3.0) && cave > p.cave_threshold {
             ground.min((p.cave_threshold - cave) * 32.0)

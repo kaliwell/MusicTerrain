@@ -64,12 +64,7 @@ fn all_noise_modes_and_extreme_parameters_remain_finite() {
         target.set(&mut p, target.bounds()[1]);
     }
     p.octaves = 8;
-    for mode in [
-        NoiseType::Perlin,
-        NoiseType::Simplex,
-        NoiseType::Fbm,
-        NoiseType::Ridged,
-    ] {
+    for mode in NoiseType::ALL {
         p.noise_type = mode;
         p.validate().unwrap();
         for x in [
@@ -88,6 +83,52 @@ fn all_noise_modes_and_extreme_parameters_remain_finite() {
     p.frequency = f32::NAN;
     assert!(p.validate().is_err());
     assert!(f.height(1.0, 1.0, &p).is_finite());
+}
+#[test]
+fn noise_modes_produce_distinct_seeded_height_fields() {
+    let field = TerrainField::new(42);
+    let mut outputs = Vec::new();
+    for noise_type in NoiseType::ALL {
+        let p = TerrainParameters {
+            noise_type,
+            detail: 0.0,
+            ..Default::default()
+        };
+        let heights = field.heightmap([-32, -32], [16, 16], &p).unwrap();
+        assert_eq!(heights, field.heightmap([-32, -32], [16, 16], &p).unwrap());
+        assert!(
+            outputs
+                .iter()
+                .all(|previous: &Vec<f32>| previous != &heights),
+            "{noise_type:?}"
+        );
+        outputs.push(heights);
+    }
+    let preset = builtins().remove(0);
+    let mut quiet = MappingState::default();
+    let mut loud = MappingState::default();
+    let a = preset
+        .mappings
+        .evaluate(
+            &AudioFeatures::default(),
+            &preset.parameters,
+            1.0,
+            &mut quiet,
+        )
+        .unwrap();
+    let b = preset
+        .mappings
+        .evaluate(
+            &AudioFeatures {
+                rms: 0.8,
+                ..Default::default()
+            },
+            &preset.parameters,
+            1.0,
+            &mut loud,
+        )
+        .unwrap();
+    assert!(b.cave_w > a.cave_w, "default music mapping must drive W");
 }
 #[test]
 fn parameters_have_observable_effects_and_three_dimensional_topology() {

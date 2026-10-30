@@ -35,11 +35,30 @@ Grass and flowers consist of two crossing planes, each emitted with both winding
 
 The default height-field path now has actual carved air voxels. Ecology computes allocation-free cave intervals once per X/Z column, then the material fill removes those voxels and exposes walls, floors and ceilings. Cave faces receive depth shading so entrances read as openings. The cave switch controls these preview networks and the core cave threshold in the density path.
 
-The existing three-dimensional density path remains available for strong caves and floating-island presets. Its coarse sampling remains explicitly represented by `MeshResult::voxel_step`; trees and plants still use individual block geometry when supported by the sampled surface.
+The three-dimensional density path is selected only by floating-island strength.
+Lowering the cave threshold never changes the sampling algorithm. In the ordinary
+preview it adjusts cached cave intervals around the original 0.78 baseline, with
+bounded expansion preserving the bottom three layers and existing roof/entrances.
+The raw core density field used by Noise Lab remains a separate mathematical field.
+
+`cave_w` selects a slice of seeded, quintic-interpolated 4D value noise. Its W
+period is 256, so clock wrapping has no discontinuity. Each preview column caches
+up to 59 transformed cave intervals in fixed storage before voxel filling. The
+field changes interval center/thickness, with the same floor/roof caps, and keeps
+the original cave layout at W=0. No vertices move between grid points. The raw
+core density field modulates its cave signal with the same 4D slice difference.
+Default mappings drive W from RMS; playback adds `audio_time * cave_speed`.
+Camera orbit is independent from audio time and does not request new meshes.
+`MeshResult::voxel_step` records actual detail; full detail uses step one even for islands.
 
 ## Budgets and diagnostics
 
-The primary height-field volume has at most 64×64 horizontal samples and 128 vertical cells. Density sampling has at most 49,152 cells. Larger preview regions use a larger horizontal sample step. Each voxel stores one byte of material identity plus a carved-air flag. No voxel material volume is retained after its mesh is produced. Decorations come from bounded world-grid queries. The worker has one running job, one pending slot and one ready result; revision cancellation and shutdown checks remain active during generation.
+Full detail uses up to 256×256 horizontal samples and 128 vertical cells (8,388,608
+cells); adaptive detail retains the previous coarser sampling. Each voxel stores
+one byte of material identity plus a carved-air flag. Footprints clip the material
+volume and decorations, including structure overlays, before meshing. No material
+volume is retained after its mesh is produced. The worker still has one active job,
+one pending slot and one ready result; cancellation and shutdown remain bounded.
 
 `MeshResult::scene` reports actual emitted content: tree and plant counts, carved voxel count, cave face count, water quad count, solid voxel count and quad counts for every material. Counts refer to the generated preview, not an estimate of persistent Minecraft world content.
 

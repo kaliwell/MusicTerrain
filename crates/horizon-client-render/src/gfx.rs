@@ -354,6 +354,8 @@ struct BorderUniform {
     offset: [f32; 4],
 }
 pub struct Renderer {
+    /// Optional projection for non-game previews; normal gameplay uses perspective.
+    pub projection_override: Option<Mat4>,
     instance: wgpu::Instance,
     adapter: wgpu::Adapter,
     /// The window's swapchain; `None` when rendering offscreen (`--offscreen`).
@@ -2580,6 +2582,7 @@ impl Renderer {
             ));
         }
         Ok(Self {
+            projection_override: None,
             instance,
             adapter,
             surface,
@@ -3543,7 +3546,10 @@ impl Renderer {
     }
     fn projection(&self, fov_degrees: f32, yaw: f32, pitch: f32, bob: Mat4, far: f32) -> Mat4 {
         let aspect = self.config.width as f32 / self.config.height.max(1) as f32;
-        world_projection(fov_degrees, aspect, far) * bob * crate::camera::view_matrix(yaw, pitch)
+        self.projection_override
+            .unwrap_or_else(|| world_projection(fov_degrees, aspect, far))
+            * bob
+            * crate::camera::view_matrix(yaw, pitch)
     }
     fn update_lightmap(
         &mut self,

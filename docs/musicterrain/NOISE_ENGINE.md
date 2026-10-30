@@ -11,7 +11,10 @@ are included.
 `TerrainField::new(seed)` constructs immutable samplers once. `height(x,z,p)`
 samples world coordinates, domain warps X/Z, sums bounded octaves, blends ridges,
 adds a smaller detail field and applies gain/erosion. Available noise modes are
-Perlin, Simplex (Horizon Simplex, not OpenSimplex), fBm and Ridged. Frequency is a
+Perlin, Simplex (Horizon Simplex, not OpenSimplex), fBm, Ridged, Billow, Cellular,
+Value and Terraced. Billow folds the Perlin octaves, Cellular uses seeded nearest
+feature distances, Value uses quintic lattice interpolation, and Terraced
+quantizes each octave. Frequency is a
 spatial sampling rate; audio Hz never becomes a noise frequency directly.
 Scale divides spatial frequency. Ridge blending is independent of the selected
 mode except Ridged, which selects the full ridge response.
@@ -23,6 +26,13 @@ actual different solid masks, rather than shader-displaced collision geometry.
 this is an in-memory adapter result, **not a Minecraft save format**. Horizon's
 block registry, heightmaps, light and region writer must be connected before this
 mask can become a playable saved world. No save integration is claimed here.
+
+`noise4.rs` supplies a seeded 4D value field. `cave_w` modulates the cave signal
+relative to its W=0 baseline. W repeats every 256 units with continuous quintic
+interpolation. In the visual preview, the same field changes cached analytic
+intervals once per column/interval, before voxel filling, with floor/roof caps.
+The audio clock adds `time * cave_speed` to the mapped W parameter; built-in
+presets include an RMS-to-W rule. Pause and seek therefore remain deterministic.
 
 All field parameters have defaults and bounds. `validate` reports invalid input;
 `clamped` sanitizes a snapshot before sampling. Octaves are limited to 1–8,

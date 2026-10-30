@@ -59,7 +59,11 @@ fn density_preview_and_larger_regions_use_bounded_lod() {
     let mut request = snapshot(1);
     request.parameters.island_strength = 1.0;
     request.parameters.cave_threshold = 0.35;
-    let density = mesh_snapshot(&request, 64).unwrap();
+    let adaptive = SceneOptions {
+        full_detail: false,
+        ..Default::default()
+    };
+    let density = mesh_snapshot_with_options(&request, 64, &adaptive).unwrap();
     assert_eq!(density.voxel_step, 2);
     println!(
         "density64: {:.3} ms, {} vertices, {} sections, checksum {:016x}",
@@ -79,7 +83,7 @@ fn density_preview_and_larger_regions_use_bounded_lod() {
     }
     request.parameters.island_strength = 0.0;
     request.parameters.cave_threshold = 0.78;
-    let larger = mesh_snapshot(&request, 256).unwrap();
+    let larger = mesh_snapshot_with_options(&request, 256, &adaptive).unwrap();
     assert_eq!(larger.voxel_step, 4);
     println!(
         "height256: {:.3} ms, {} vertices, {} sections, checksum {:016x}",

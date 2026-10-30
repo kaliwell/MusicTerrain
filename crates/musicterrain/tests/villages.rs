@@ -274,6 +274,7 @@ fn coarse_and_density_previews_suspend_villages_instead_of_collapsing_rooms() {
         audio_time: 0.,
     };
     let options = SceneOptions {
+        full_detail: false,
         biome: Some(SceneBiome::Meadow),
         villages: VillageMode::Showcase,
         ..SceneOptions::default()

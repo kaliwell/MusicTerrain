@@ -72,10 +72,10 @@ Village statistics report visible/intersecting plans and plots, not inhabitants.
 Requests are bounded to 256 blocks, at most 150,000 planned village blocks,
 bounded decoration grids and the existing one-running/one-pending/one-result
 worker. Plans and plot loops check cancellation; expired revisions are discarded.
-Larger extents retain existing voxel LOD for terrain. Villages are suspended at
-128/256 extents to preserve one-block walls/windows and hollow rooms rather than
-collapse them into coarse cells. Select 64×64 for villages. Floating
-island/strong density previews suspend villages rather than place unsupported
+Full detail retains one-block terrain and village geometry at all extents.
+Adaptive detail suspends villages at 128/256 to avoid collapsing walls/windows.
+Select Full detail or 64×64 for villages. Floating
+island density previews suspend villages rather than place unsupported
 buildings in air; use a height-field preset for the village showcase.
 
 There are 54 original material layers. All old IDs remain stable. Local resource

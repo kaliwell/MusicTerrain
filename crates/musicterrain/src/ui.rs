@@ -31,6 +31,7 @@ pub enum RuleField {
 #[derive(Clone, Debug)]
 pub enum Action {
     Page(Page),
+    Language,
     Play,
     Seek(f64),
     Preset(usize),
@@ -39,6 +40,10 @@ pub enum Action {
     Redo,
     Save,
     Load,
+    Shape,
+    Detail,
+    Orbit,
+    Projection,
     Spectrum,
     Offset(f32),
     Resolution(u32),
@@ -71,8 +76,8 @@ struct Hit {
     action: Action,
     slider: Option<[f32; 2]>,
 }
-#[derive(Default)]
 pub struct Ui {
+    pub language: crate::localization::Language,
     hits: Vec<Hit>,
     pub scroll: usize,
     noise_key: Option<(i64, TerrainParameters)>,
@@ -96,6 +101,8 @@ pub struct View<'a> {
     pub offset: f32,
     pub size: u32,
     pub music_overlay: bool,
+    pub orbit: bool,
+    pub orthographic: bool,
     pub effective_parameters: &'a TerrainParameters,
     pub diagnostics: Diagnostics,
     pub scene_options: SceneOptions,
@@ -104,6 +111,7 @@ pub struct View<'a> {
 }
 #[derive(Default)]
 pub struct Diagnostics {
+    pub mesh_hz: f32,
     pub submitted: u64,
     pub completed: u64,
     pub dropped: u64,
@@ -120,7 +128,23 @@ const INK: u32 = 0xfff3edec;
 const MUTED: u32 = 0xff9c8f8b;
 const ACCENT: u32 = 0xffff869a;
 const PLATE: u32 = 0xff221a18;
+impl Default for Ui {
+    fn default() -> Self {
+        Self {
+            language: crate::localization::Language::load(),
+            hits: Vec::new(),
+            scroll: 0,
+            noise_key: None,
+            noise_colors: Default::default(),
+        }
+    }
+}
 impl Ui {
+    fn text(&self, h: &mut HudBatch, x: f32, y: f32, label: &str, color: u32, scale: f32) {
+        let label = crate::localization::translate(self.language, label);
+        text(h, x, y, &label, color, scale);
+    }
+
     pub fn action(&self, x: f32, y: f32) -> Option<Action> {
         self.hits.iter().rev().find_map(|h| {
             let [a, b, w, t] = h.rect;
@@ -153,7 +177,7 @@ impl Ui {
     }
     fn button(&mut self, h: &mut HudBatch, r: [f32; 4], label: &str, action: Action, active: bool) {
         rect(h, r, if active { ACCENT } else { PLATE });
-        text(
+        self.text(
             h,
             r[0] + 8.0,
             r[1] + 9.0,
@@ -176,8 +200,8 @@ impl Ui {
         bounds: [f32; 2],
         action: Action,
     ) {
-        text(h, r[0], r[1], label, INK, 1.0);
-        text(
+        self.text(h, r[0], r[1], label, INK, 1.0);
+        self.text(
             h,
             r[0] + r[2] - 62.0,
             r[1],
@@ -217,9 +241,9 @@ impl Ui {
             [195.0, height - 123.0, (right - 195.0).max(10.0), 123.0],
             0xf5130e0d,
         );
-        text(&mut h, 20.0, 19.0, "MUSICTERRAIN", INK, 2.0);
-        text(&mut h, 220.0, 18.0, v.audio_name, MUTED, 1.0);
-        text(
+        self.text(&mut h, 20.0, 19.0, "MUSICTERRAIN", INK, 2.0);
+        self.text(&mut h, 220.0, 18.0, v.audio_name, MUTED, 1.0);
+        self.text(
             &mut h,
             220.0,
             37.0,
@@ -248,7 +272,7 @@ impl Ui {
             Action::Load,
             false,
         );
-        text(&mut h, 220.0, 52.0, v.clock_label, MUTED, 1.0);
+        self.text(&mut h, 220.0, 52.0, v.clock_label, MUTED, 1.0);
         let pages = [
             (Page::Live, "01 LIVE"),
             (Page::World, "02 MUSIC WORLD"),
@@ -268,12 +292,19 @@ impl Ui {
                 v.page == p,
             );
         }
-        text(&mut h, 18.0, height - 157.0, "TEXTURE SOURCE", MUTED, 1.0);
+        self.button(
+            &mut h,
+            [12.0, 442.0, 170.0, 32.0],
+            "中文 / ENGLISH",
+            Action::Language,
+            false,
+        );
+        self.text(&mut h, 18.0, height - 157.0, "TEXTURE SOURCE", MUTED, 1.0);
         let texture_label: String = v.texture_info.chars().take(27).collect();
-        text(&mut h, 18.0, height - 139.0, &texture_label, INK, 1.0);
-        text(&mut h, 18.0, height - 110.0, "RMB + MOUSE LOOK", MUTED, 1.0);
-        text(&mut h, 18.0, height - 91.0, "WASD / Q E FLY", MUTED, 1.0);
-        text(
+        self.text(&mut h, 18.0, height - 139.0, &texture_label, INK, 1.0);
+        self.text(&mut h, 18.0, height - 110.0, "RMB + MOUSE LOOK", MUTED, 1.0);
+        self.text(&mut h, 18.0, height - 91.0, "WASD / Q E FLY", MUTED, 1.0);
+        self.text(
             &mut h,
             18.0,
             height - 72.0,
@@ -281,8 +312,8 @@ impl Ui {
             MUTED,
             1.0,
         );
-        text(&mut h, 18.0, height - 53.0, "LEFT RIGHT SEEK", MUTED, 1.0);
-        text(
+        self.text(&mut h, 18.0, height - 53.0, "LEFT RIGHT SEEK", MUTED, 1.0);
+        self.text(
             &mut h,
             18.0,
             height - 34.0,
@@ -290,7 +321,7 @@ impl Ui {
             MUTED,
             1.0,
         );
-        text(&mut h, right + 18.0, 85.0, &v.preset.name, INK, 1.0);
+        self.text(&mut h, right + 18.0, 85.0, &v.preset.name, INK, 1.0);
         self.button(
             &mut h,
             [right + 18.0, 109.0, 72.0, 29.0],
@@ -355,6 +386,7 @@ impl Ui {
                         TargetParameter::Frequency => [0.002, 0.15],
                         TargetParameter::Scale => [0.1, 5.0],
                         TargetParameter::DomainWarp => [0.0, 40.0],
+                        TargetParameter::CaveW => [-8.0, 8.0],
                         _ => t.bounds(),
                     };
                     self.slider(
@@ -366,7 +398,7 @@ impl Ui {
                         Action::Parameter(t, 0.0),
                     );
                 }
-                text(
+                self.text(
                     &mut h,
                     x,
                     height - 40.0,
@@ -376,7 +408,7 @@ impl Ui {
                 );
                 if v.page == Page::Noise {
                     rect(&mut h, [212.0, 80.0, 80.0, 16.0], 0xee130e0d);
-                    text(&mut h, 218.0, 85.0, "NOISE LAB", INK, 1.0);
+                    self.text(&mut h, 218.0, 85.0, "NOISE LAB", INK, 1.0);
                     self.button(
                         &mut h,
                         [215.0, 119.0, 210.0, 29.0],
@@ -437,7 +469,7 @@ impl Ui {
                             [left - 4.0, top - 20.0, side + 8.0, side + 26.0],
                             0xed130e0d,
                         );
-                        text(&mut h, left, top - 14.0, label, INK, 1.0);
+                        self.text(&mut h, left, top - 14.0, label, INK, 1.0);
                         let cell = side / 32.0;
                         for (index, color) in self.noise_colors[i].iter().enumerate() {
                             rect(
@@ -471,8 +503,8 @@ impl Ui {
                         rule.target,
                         TargetParameter::StructureDensity | TargetParameter::ParticleIntensity
                     ) {
-                        text(&mut h, x, y, &format!("{:?}", rule.target), MUTED, 1.0);
-                        text(
+                        self.text(&mut h, x, y, &format!("{:?}", rule.target), MUTED, 1.0);
+                        self.text(
                             &mut h,
                             x,
                             y + 24.0,
@@ -628,7 +660,7 @@ impl Ui {
                         rule.clamp,
                     );
                 }
-                text(
+                self.text(
                     &mut h,
                     x,
                     height - 40.0,
@@ -649,6 +681,47 @@ impl Ui {
                 }
             }
             Page::Settings => {
+                self.button(
+                    &mut h,
+                    [215.0, 159.0, 210.0, 30.0],
+                    if v.orbit {
+                        "AUTO ORBIT ON"
+                    } else {
+                        "AUTO ORBIT OFF"
+                    },
+                    Action::Orbit,
+                    v.orbit,
+                );
+                self.button(
+                    &mut h,
+                    [435.0, 159.0, 238.0, 30.0],
+                    if v.orthographic {
+                        "ORTHOGRAPHIC VIEW"
+                    } else {
+                        "PERSPECTIVE VIEW"
+                    },
+                    Action::Projection,
+                    v.orthographic,
+                );
+                self.text(&mut h, 215.0, 202.0, "WHEEL ZOOM / RMB LOOK", MUTED, 1.0);
+                self.button(
+                    &mut h,
+                    [215.0, 119.0, 210.0, 30.0],
+                    &format!("SHAPE {}", v.scene_options.shape.name()),
+                    Action::Shape,
+                    false,
+                );
+                self.button(
+                    &mut h,
+                    [435.0, 119.0, 238.0, 30.0],
+                    if v.scene_options.full_detail {
+                        "DETAIL FULL: 1 BLOCK"
+                    } else {
+                        "DETAIL ADAPTIVE"
+                    },
+                    Action::Detail,
+                    v.scene_options.full_detail,
+                );
                 self.button(
                     &mut h,
                     [x, 158.0, sw, 30.0],
@@ -677,8 +750,8 @@ impl Ui {
                         v.size == s,
                     );
                 }
-                text(&mut h, x, 414.0, "AUDIO OUTPUT: DEFAULT DEVICE", MUTED, 1.0);
-                text(&mut h, x, 437.0, "CAPTURE: NOT IMPLEMENTED", MUTED, 1.0);
+                self.text(&mut h, x, 414.0, "AUDIO OUTPUT: DEFAULT DEVICE", MUTED, 1.0);
+                self.text(&mut h, x, 437.0, "CAPTURE: NOT IMPLEMENTED", MUTED, 1.0);
                 self.button(
                     &mut h,
                     [x, 470.0, sw, 30.0],
@@ -732,16 +805,15 @@ impl Ui {
                     Action::Villages,
                     false,
                 );
-                let density = v.effective_parameters.island_strength > 0.1
-                    || (v.scene_options.caves && v.effective_parameters.cave_threshold < 0.5);
+                let density = v.effective_parameters.island_strength > 0.1;
                 let village_status = if density {
                     "VILLAGES: HEIGHT FIELD ONLY".to_owned()
-                } else if v.size > 64 {
-                    "VILLAGES: SELECT 64 X 64".to_owned()
+                } else if v.size > 64 && !v.scene_options.full_detail {
+                    "VILLAGES: ENABLE FULL DETAIL".to_owned()
                 } else {
                     format!("HOUSES {} - FARMS {}", v.scene.houses, v.scene.farms)
                 };
-                text(&mut h, x, 663.0, &village_status, MUTED, 1.0);
+                self.text(&mut h, x, 663.0, &village_status, MUTED, 1.0);
             }
             Page::Underground => {
                 self.button(
@@ -769,26 +841,48 @@ impl Ui {
                     Action::UndergroundView,
                     false,
                 );
+                for (i, target) in [
+                    TargetParameter::CaveThreshold,
+                    TargetParameter::CaveW,
+                    TargetParameter::CaveSpeed,
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    self.slider(
+                        &mut h,
+                        [x, 302.0 + i as f32 * 45.0, sw, 28.0],
+                        &format!("{target:?}"),
+                        target.get(&v.preset.parameters),
+                        if target == TargetParameter::CaveW {
+                            [-8.0, 8.0]
+                        } else {
+                            target.bounds()
+                        },
+                        Action::Parameter(target, 0.0),
+                    );
+                }
                 let lines = [
-                    "ORIGINAL MODERN-STYLE CAVES".to_owned(),
+                    "4D W / MUSIC REACTIVE CAVES".to_owned(),
                     "CHAMBERS + WINDING TUNNELS".into(),
                     "LUSH / DRIPSTONE / DEEP".into(),
                     "LOW AQUIFERS + ORE VEINS".into(),
                     format!("MINES {}", v.scene.mines),
                     format!("SUPPORTS {}", v.scene.supports),
                     format!("RAIL SEGMENTS {}", v.scene.rails),
-                    "MINES REQUIRE 64 HEIGHT FIELD".into(),
+                    "MINES REQUIRE FULL HEIGHT FIELD".into(),
                     "CAVES OFF ALSO DISABLES MINES".into(),
                     "PREVIEW Y 0..128, NO SAVE".into(),
                 ];
                 for (i, line) in lines.iter().enumerate() {
-                    text(&mut h, x, 310.0 + i as f32 * 27.0, line, INK, 1.0);
+                    self.text(&mut h, x, 454.0 + i as f32 * 27.0, line, INK, 1.0);
                 }
             }
             Page::Diagnostics => {
                 let lines = [
                     format!("FRAME {:.2} MS", 1000.0 / v.fps.max(0.1)),
                     format!("FPS {:.1}", v.fps),
+                    format!("TERRAIN UPDATES {:.1} HZ", v.diagnostics.mesh_hz),
                     format!("GENERATION {:.2} MS", v.generation_ms),
                     format!("REVISION {}", v.revision),
                     format!("QUEUE CAPACITY 1 - BUSY {}", v.diagnostics.busy),
@@ -828,13 +922,13 @@ impl Ui {
                 ];
                 let spacing = ((height - 200.0) / lines.len() as f32).clamp(16.0, 28.0);
                 for (i, s) in lines.into_iter().enumerate() {
-                    text(&mut h, x, 160.0 + i as f32 * spacing, &s, INK, 1.0);
+                    self.text(&mut h, x, 160.0 + i as f32 * spacing, &s, INK, 1.0);
                 }
             }
             Page::World => {
-                text(&mut h, x, 162.0, "MUSIC WORLD: UNAVAILABLE", INK, 1.0);
-                text(&mut h, x, 189.0, "SAVE ADAPTER NOT IMPLEMENTED", MUTED, 1.0);
-                text(&mut h, x, 216.0, "NO WORLD FILES ARE WRITTEN", MUTED, 1.0);
+                self.text(&mut h, x, 162.0, "MUSIC WORLD: UNAVAILABLE", INK, 1.0);
+                self.text(&mut h, x, 189.0, "SAVE ADAPTER NOT IMPLEMENTED", MUTED, 1.0);
+                self.text(&mut h, x, 216.0, "NO WORLD FILES ARE WRITTEN", MUTED, 1.0);
             }
         }
         let cw = (right - 235.0).max(60.0);
@@ -850,7 +944,7 @@ impl Ui {
                 );
             }
         }
-        text(
+        self.text(
             &mut h,
             215.0,
             height - 54.0,
@@ -869,17 +963,19 @@ impl Ui {
             [0.0, v.duration.max(0.001) as f32],
             Action::Seek(0.0),
         );
-        let status: String = v
-            .status
-            .chars()
-            .take(((right - 225.0) / 6.0).max(1.0) as usize)
-            .collect();
-        rect(
-            &mut h,
-            [209.0, 92.0, status.len() as f32 * 6.0 + 12.0, 16.0],
-            0xee130e0d,
-        );
-        text(&mut h, 215.0, 96.0, &status, rgba(240, 190, 140, 255), 1.0);
+        let localized_status = crate::localization::translate(self.language, v.status);
+        let mut status = String::new();
+        let mut status_width = 0.0;
+        for ch in localized_status.chars() {
+            let width = if ch.is_ascii() { 6.0 } else { 15.0 };
+            if status_width + width > right - 225.0 {
+                break;
+            }
+            status.push(ch);
+            status_width += width;
+        }
+        rect(&mut h, [209.0, 92.0, status_width + 12.0, 16.0], 0xee130e0d);
+        self.text(&mut h, 215.0, 96.0, &status, rgba(240, 190, 140, 255), 1.0);
         h
     }
 }
@@ -892,6 +988,15 @@ pub fn rect(h: &mut HudBatch, [x, y, w, t]: [f32; 4], color: u32) {
 }
 pub fn text(h: &mut HudBatch, mut x: f32, y: f32, s: &str, color: u32, scale: f32) {
     for ch in s.to_ascii_uppercase().chars() {
+        let advance = if ch.is_ascii() { 6.0 } else { 15.0 } * scale;
+        if x + advance > h.width - 8.0 {
+            break;
+        }
+        if !ch.is_ascii() {
+            crate::unicode_font::draw(h, ch, x, y - 3.0 * scale, color, scale);
+            x += advance;
+            continue;
+        }
         let rows = glyph(ch);
         for (row, bits) in rows.into_iter().enumerate() {
             for col in 0..5 {
@@ -956,5 +1061,78 @@ fn glyph(c: char) -> [u8; 7] {
         '[' => [14, 8, 8, 8, 8, 8, 14],
         ']' => [14, 2, 2, 2, 2, 2, 14],
         _ => [0; 7],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::localization::Language;
+
+    #[test]
+    fn language_control_is_available_on_every_page_in_both_languages() {
+        let presets = crate::preset::builtins();
+        let preset = &presets[0];
+        let features = AudioFeatures::default();
+        let scene = SceneStats::default();
+        let mut ui = Ui::default();
+        for language in [Language::Chinese, Language::English] {
+            ui.language = language;
+            for page in [
+                Page::Live,
+                Page::World,
+                Page::Noise,
+                Page::Mapping,
+                Page::Presets,
+                Page::Settings,
+                Page::Diagnostics,
+                Page::Underground,
+            ] {
+                ui.draw(
+                    [1280, 800],
+                    View {
+                        clock_label: "SILENT SOFTWARE CLOCK - NO SOUND",
+                        preset,
+                        presets: &presets,
+                        page,
+                        features: &features,
+                        position: 0.0,
+                        duration: 12.0,
+                        playing: false,
+                        spectrum: true,
+                        fps: 60.0,
+                        generation_ms: 0.0,
+                        revision: 1,
+                        status: "ANALYZING AUDIO...",
+                        audio_name: "demo.wav",
+                        offset: 0.0,
+                        size: 64,
+                        music_overlay: true,
+                        orbit: false,
+                        orthographic: false,
+                        effective_parameters: &preset.parameters,
+                        diagnostics: Diagnostics::default(),
+                        scene_options: SceneOptions::default(),
+                        scene: &scene,
+                        texture_info: "ORIGINAL MATERIALS: 65",
+                    },
+                );
+                assert!(
+                    matches!(ui.action(90.0, 455.0), Some(Action::Language)),
+                    "{language:?} {page:?}"
+                );
+                assert!(!ui.is_slider(90.0, 455.0));
+                if page == Page::Settings {
+                    assert!(matches!(ui.action(235.0, 130.0), Some(Action::Shape)));
+                    assert!(matches!(ui.action(455.0, 130.0), Some(Action::Detail)));
+                    assert!(matches!(ui.action(235.0, 170.0), Some(Action::Orbit)));
+                    assert!(matches!(ui.action(455.0, 170.0), Some(Action::Projection)));
+                }
+                assert!(matches!(
+                    ui.action(90.0, 314.0),
+                    Some(Action::Page(Page::Settings))
+                ));
+            }
+        }
     }
 }

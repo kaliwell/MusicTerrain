@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
     if command == "help" || args.iter().any(|a| a == "--help" || a == "-h") {
         println!(
-            "MusicTerrain\n  demo | preview [--audio FILE] [--size 64|128|256] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--mines off|auto|showcase] [--view surface|cutaway|underground]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB+WASD fly.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
+            "MusicTerrain\n  demo | preview [--language zh-CN|en] [--audio FILE] [--size 64|128|256] [--shape square|cylinder|hexagon|diamond] [--quality full|adaptive] [--orbit] [--orthographic] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--mines off|auto|showcase] [--view surface|cutaway|underground]\n                 [--noise perlin|simplex|fbm|ridged|billow|cellular|value|terraced] [--cave-w NUMBER]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB look; WASD fly; wheel zoom; Settings orbit/projection.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
         );
         return Ok(());
     }
@@ -49,7 +49,22 @@ fn run() -> Result<(), Box<dyn Error>> {
                 let mut i = 0;
                 while i < args.len() {
                     match args[i].as_str() {
+                        "--language" => {
+                            options.language = Some(
+                                musicterrain::localization::Language::parse(value(&args, &mut i)?)
+                                    .ok_or("--language must be zh-CN or en")?,
+                            )
+                        }
                         "--audio" => options.audio_path = Some(value(&args, &mut i)?.into()),
+                        "--orbit" => options.orbit = true,
+                        "--orthographic" => options.orthographic = true,
+                        "--noise" => {
+                            options.noise = Some(
+                                musicterrain::terrain::NoiseType::parse(value(&args, &mut i)?)
+                                    .ok_or("Unknown noise type")?,
+                            )
+                        }
+                        "--cave-w" => options.cave_w = Some(value(&args, &mut i)?.parse()?),
                         "--biome" => {
                             let name = value(&args, &mut i)?;
                             options.scene_options.biome = if name == "auto" {
@@ -57,6 +72,18 @@ fn run() -> Result<(), Box<dyn Error>> {
                             } else {
                                 Some(musicterrain::ecology::SceneBiome::parse(name).ok_or("Unknown biome; use auto, meadow, forest, alpine, shore, birch-forest, taiga, desert, badlands, savanna, swamp, jungle")?)
                             };
+                        }
+                        "--shape" => {
+                            options.scene_options.shape =
+                                musicterrain::shape::TerrainShape::parse(value(&args, &mut i)?)
+                                    .ok_or("--shape must be square, cylinder, hexagon or diamond")?
+                        }
+                        "--quality" => {
+                            options.scene_options.full_detail = match value(&args, &mut i)? {
+                                "full" => true,
+                                "adaptive" => false,
+                                _ => return Err("--quality must be full or adaptive".into()),
+                            }
                         }
                         "--resources" => options.resources = Some(value(&args, &mut i)?.into()),
                         "--mines" => {

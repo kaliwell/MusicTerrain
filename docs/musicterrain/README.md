@@ -26,6 +26,9 @@ import. Import and analysis run on a bounded worker, never on the audio callback
 
 - Space: play/pause; Left/Right: seek five seconds; click/drag the timeline to seek.
 - Hold right mouse and move to look; W/A/S/D move, Q/E descend/ascend.
+- Mouse wheel over the scene zooms. Settings has Auto Orbit and Perspective /
+  Orthographic toggles. Manual movement stops automatic orbit; right-drag adjusts
+  the orbit angle. Orbit is off by default and turns at ten degrees per second.
 - Left navigation opens Live, Music World status, Noise Lab, mappings, presets,
   settings and diagnostics. Music World export/capture show their true unavailable status.
 - Inspector sliders edit the live parameters; mouse wheel scrolls inspector/rules.
@@ -37,8 +40,10 @@ import. Import and analysis run on a bounded worker, never on the audio callback
 - Presets provides seven different built-ins, Reset, Undo and Redo. Save/Load use
   `musicterrain-preset.json` or `--preset-file FILE`. Save creates a new file and
   reports an error if it exists; choose a new path to preserve an earlier preset.
-- Settings controls spectrum, audio/visual offset and preview extent. Larger
-  extents reduce voxel detail to retain a finite mesh budget.
+- Settings controls spectrum, audio/visual offset, preview extent, footprint and detail.
+  Full detail (default) keeps one-block voxels at 64/128/256 extents. Adaptive detail
+  is optional for performance. Above the scene, cycle Square / Cylinder / Hexagon /
+  Diamond and Full / Adaptive. Larger full-detail scenes take longer to generate.
 - Diagnostics reports actual worker, renderer and upload metrics. GPU copy
   submission time is distinguished from GPU execution time.
 
@@ -57,6 +62,30 @@ cargo run -p musicterrain -- demo --silent-preview
 
 
 ## Textured world preview
+
+`--shape square|cylinder|hexagon|diamond` selects an extruded, voxel-aligned footprint.
+`--quality full|adaptive` selects detail independently from the preview extent.
+Changing the extent reframes the camera. A/D now follow the rendered camera's
+horizontal right/left axes. Cave thresholds below 0.5 no longer switch the preview
+to coarse density sampling; only the explicit floating-island control selects it.
+Normal preview caves expand/shrink within bounded intervals while preserving the
+floor and existing surface roof/entrances, including at threshold zero.
+
+Caves evolve through a seeded continuous 4D noise field along W. The ordinary
+preview samples this field per cave interval to adjust its center/thickness;
+X/Z coordinates stay fixed and the voxel grid stays aligned. The density field
+also accepts W. Playback time advances W at `CaveSpeed`, while the default RMS
+mapping adds a smoothed W offset. Pausing freezes it and seeking reproduces the
+same slice. Noise Lab without Music Overlay uses the manual W value.
+Underground exposes Cave Threshold, Cave W and W Evolution Speed sliders.
+
+Noise choices are Perlin, Simplex, FBM, Ridged, Billow, Cellular (Worley), Value
+and Terraced. Cycle the Noise button in Live / Noise Lab.
+
+```sh
+cargo run --profile fast -p musicterrain -- demo --shape cylinder --orbit --orthographic
+cargo run --profile fast -p musicterrain -- demo --noise cellular --cave-w 1.25
+```
 
 The default preview now includes grass/dirt/stone layers, oak trees, cutout grass
 and flowers, sand banks, translucent pond water, coal/iron ore, gravel/clay and

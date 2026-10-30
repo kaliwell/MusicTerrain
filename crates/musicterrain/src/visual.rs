@@ -26,6 +26,8 @@ use std::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SceneOptions {
+    pub shape: crate::shape::TerrainShape,
+    pub full_detail: bool,
     pub vegetation: bool,
     pub water: bool,
     pub caves: bool,
@@ -37,6 +39,8 @@ pub struct SceneOptions {
 impl Default for SceneOptions {
     fn default() -> Self {
         Self {
+            shape: Default::default(),
+            full_detail: true,
             vegetation: true,
             water: true,
             caves: true,
@@ -306,9 +310,10 @@ fn generate_mesh(
     let field = TerrainField::new(snapshot.seed);
     let ecology = Ecology::new(snapshot.seed).with_biome(options.biome);
     let mut builder = MeshBuilder::new(snapshot);
-    let density = snapshot.parameters.island_strength > 0.1
-        || (options.caves && snapshot.parameters.cave_threshold < 0.5);
-    let step = if density {
+    let density = snapshot.parameters.island_strength > 0.1;
+    let step = if options.full_detail {
+        1
+    } else if density {
         size.div_ceil(32).next_power_of_two().max(2)
     } else {
         size.div_ceil(64).next_power_of_two()
@@ -375,6 +380,7 @@ fn generate_mesh(
     volume.apply_mines(&mines);
     volume.apply_village(&villages, options.water);
     volume.apply_view(options.underground_view);
+    volume.clip_shape(options.shape);
     builder.scene.mines = mines.mines;
     builder.scene.supports = mines.supports;
 
@@ -399,7 +405,11 @@ fn generate_mesh(
             &cancelled,
         )?;
         for crop in &villages.crops {
-            if options.underground_view.visible(*crop) {
+            if options.underground_view.visible(*crop)
+                && options
+                    .shape
+                    .contains(crop[0] as f32 + 0.5, crop[2] as f32 + 0.5, size)
+            {
                 builder.plant(*crop, Material::Wheat);
                 builder.scene.plants += 1;
             }
@@ -415,12 +425,22 @@ fn generate_mesh(
         }
     }
     for p in &mines.webs {
-        if options.underground_view.visible(*p) && volume.world_get(*p) == 0 {
+        if options.underground_view.visible(*p)
+            && volume.world_get(*p) == 0
+            && options
+                .shape
+                .contains(p[0] as f32 + 0.5, p[2] as f32 + 0.5, size)
+        {
             builder.plant(*p, Material::Cobweb);
         }
     }
     for p in &mines.lamps {
-        if options.underground_view.visible(*p) && volume.world_get(*p) == 0 {
+        if options.underground_view.visible(*p)
+            && volume.world_get(*p) == 0
+            && options
+                .shape
+                .contains(p[0] as f32 + 0.5, p[2] as f32 + 0.5, size)
+        {
             builder.detail_box(*p, [0.25, 0.22, 0.25], [0.5, 0.65, 0.5], Material::Lantern);
         }
     }
@@ -458,6 +478,201 @@ fn generate_mesh(
         },
     })
 }
+/// Sample a continuous 4D field once per interval, keeping the voxel loop cheap.
+/// W=0 reproduces the authored cave columns; other slices move and reshape them.
+fn cave_slice(
+    range: [f32; 2],
+    x: i32,
+    z: i32,
+    surface: i32,
+    margin: f32,
+    seed: i64,
+    w: f32,
+) -> [f32; 2] {
+    let delta = if w == 0.0 {
+        0.0
+    } else {
+        let p = [
+            f64::from(x) * 0.045,
+            f64::from((range[0] + range[1]) * 0.5) * 0.06,
+            f64::from(z) * 0.045,
+            f64::from(w),
+        ];
+        crate::noise4::value(seed, p) - crate::noise4::value(seed, [p[0], p[1], p[2], 0.0])
+    };
+    let shift = delta * 3.0;
+    let expansion = delta.abs() * 1.5;
+    let roof = range[1].max(surface as f32 - 4.0);
+    [
+        (range[0] - margin + shift - expansion).max(3.0),
+        (range[1] + margin + shift + expansion).min(roof),
+    ]
+}
+
+#[cfg(test)]
+mod preview_regressions {
+    use super::*;
+    use crate::{shape::TerrainShape, terrain::TerrainParameters};
+
+    fn flat(height: f32) -> TerrainSnapshot {
+        TerrainSnapshot {
+            revision: GenerationRevision(1),
+            seed: 42,
+            audio_time: 0.0,
+            parameters: TerrainParameters {
+                base_height: height,
+                amplitude: 0.0,
+                detail: 0.0,
+                ..Default::default()
+            },
+        }
+    }
+    fn bare() -> SceneOptions {
+        SceneOptions {
+            vegetation: false,
+            water: false,
+            villages: VillageMode::Off,
+            mines: MineMode::Off,
+            ..Default::default()
+        }
+    }
+    #[test]
+    fn w_evolves_caves_without_translating_the_surface_or_breaking_floor_and_roof() {
+        let mut request = flat(60.0);
+        request.parameters.cave_threshold = 0.0;
+        let field = TerrainField::new(42);
+        let ecology = Ecology::new(42);
+        let original =
+            Volume::generate(&request, &field, &ecology, 32, 1, false, bare(), &|| false).unwrap();
+        request.parameters.cave_w = 1.25;
+        let moved =
+            Volume::generate(&request, &field, &ecology, 32, 1, false, bare(), &|| false).unwrap();
+        let repeat =
+            Volume::generate(&request, &field, &ecology, 32, 1, false, bare(), &|| false).unwrap();
+        assert_eq!(moved.cells, repeat.cells);
+        assert_eq!(original.surfaces, moved.surfaces);
+        assert!(
+            original
+                .carved
+                .iter()
+                .zip(&moved.carved)
+                .filter(|(a, b)| a != b)
+                .count()
+                > 100
+        );
+        for z in 0..32 {
+            for x in 0..32 {
+                for y in 0..3 {
+                    assert_ne!(moved.get(x, y, z), 0);
+                }
+                for y in 57..60 {
+                    if original.get(x, y, z) != 0 {
+                        assert_ne!(moved.get(x, y, z), 0);
+                    }
+                }
+            }
+        }
+        let a = cave_slice([10.0, 20.0], 5, -8, 60, 0.5, 42, 0.99999);
+        let b = cave_slice([10.0, 20.0], 5, -8, 60, 0.5, 42, 1.00001);
+        assert!((a[0] - b[0]).abs() < 0.001 && (a[1] - b[1]).abs() < 0.001);
+    }
+    #[test]
+    fn low_cave_threshold_preserves_full_height_floor_and_existing_roof() {
+        let mut request = flat(100.0);
+        let field = TerrainField::new(42);
+        let ecology = Ecology::new(42);
+        let mut previous_carved = 0;
+        for threshold in [1.0, 0.78, 0.5001, 0.4999, 0.197, 0.0] {
+            request.parameters.cave_threshold = threshold;
+            let v = Volume::generate(&request, &field, &ecology, 32, 1, false, bare(), &|| false)
+                .unwrap();
+            let carved = v.carved.iter().filter(|c| **c).count();
+            assert!(carved >= previous_carved);
+            previous_carved = carved;
+            for z in 0..32 {
+                for x in 0..32 {
+                    for y in 0..3 {
+                        assert_ne!(v.get(x, y, z), 0, "floor at {threshold}");
+                    }
+                    let original = ecology.cave_column(x - 16, z - 16, 100.0);
+                    for y in 97..100 {
+                        if !original.contains(y) {
+                            assert_ne!(v.get(x, y, z), 0, "roof at {threshold}");
+                        }
+                    }
+                }
+            }
+            assert!(v.cells.iter().filter(|c| **c != 0).count() > 32 * 32 * 50);
+            let mesh = mesh_snapshot_with_options(&request, 32, &bare()).unwrap();
+            assert_eq!(mesh.voxel_step, 1);
+            assert!(
+                mesh.sections.iter().any(|((_, sy, _), _)| *sy >= 10),
+                "upper terrain must not be cut at Y96"
+            );
+        }
+        assert!(previous_carved > 0);
+    }
+    #[test]
+    fn shaped_volumes_are_clipped_at_every_height_and_keep_caves() {
+        let request = flat(40.0);
+        let field = TerrainField::new(42);
+        let ecology = Ecology::new(42);
+        let mut counts = Vec::new();
+        for shape in TerrainShape::ALL {
+            let options = SceneOptions { shape, ..bare() };
+            let mut v =
+                Volume::generate(&request, &field, &ecology, 32, 1, false, options, &|| false)
+                    .unwrap();
+            // Structure writes outside the footprint must also be removed by final clipping.
+            let i = v.index(0, 10, 0);
+            v.cells[i] = encode(Material::Stone);
+            v.clip_shape(shape);
+            for z in 0..32 {
+                for x in 0..32 {
+                    let inside = shape.contains(x as f32 - 15.5, z as f32 - 15.5, 32);
+                    for y in 0..v.vertical as i32 {
+                        if !inside {
+                            assert_eq!(v.get(x, y, z), 0);
+                        }
+                    }
+                    if inside {
+                        assert_ne!(v.get(x, 0, z), 0);
+                    }
+                }
+            }
+            let mesh = mesh_snapshot_with_options(&request, 32, &options).unwrap();
+            assert!(mesh.scene.carved_voxels > 0);
+            counts.push(mesh.scene.solid_voxels);
+        }
+        counts.sort();
+        counts.dedup();
+        assert_eq!(counts.len(), 4);
+    }
+    #[test]
+    fn full_detail_stays_one_block_at_all_extents_and_adaptive_remains_available() {
+        let request = flat(10.0);
+        let full = SceneOptions {
+            caves: false,
+            ..bare()
+        };
+        for size in [64, 128, 256] {
+            let mesh = mesh_snapshot_with_options(&request, size, &full).unwrap();
+            assert_eq!(mesh.voxel_step, 1);
+            assert_eq!(mesh.scene.solid_voxels, size * size * 10);
+            let coarse = mesh_snapshot_with_options(
+                &request,
+                size,
+                &SceneOptions {
+                    full_detail: false,
+                    ..full
+                },
+            )
+            .unwrap();
+            assert_eq!(coarse.voxel_step, size / 64);
+        }
+    }
+}
+
 fn wave(snapshot: &TerrainSnapshot, x: f64, z: f64) -> f32 {
     if snapshot.parameters.shockwave == 0. {
         return 0.;
@@ -619,6 +834,26 @@ impl Volume {
             self.carved[index] = false;
         }
     }
+    fn clip_shape(&mut self, shape: crate::shape::TerrainShape) {
+        if shape == crate::shape::TerrainShape::Square {
+            return;
+        }
+        for z in 0..self.n {
+            for x in 0..self.n {
+                if !shape.contains(
+                    self.origin as f32 + (x as f32 + 0.5) * self.step as f32,
+                    self.origin as f32 + (z as f32 + 0.5) * self.step as f32,
+                    self.size,
+                ) {
+                    for y in 0..self.vertical {
+                        let i = self.index(x, y, z);
+                        self.cells[i] = 0;
+                        self.carved[i] = false;
+                    }
+                }
+            }
+        }
+    }
     fn apply_view(&mut self, view: UndergroundView) {
         for z in 0..self.n {
             for x in 0..self.n {
@@ -695,6 +930,12 @@ impl Volume {
         if !options.caves {
             parameters.cave_threshold = 1.;
         }
+        // Threshold adjusts bounded cave intervals, never the preview algorithm or voxel size.
+        let cave_margin = if density {
+            0.0
+        } else {
+            (0.78 - parameters.cave_threshold) * 4.0
+        };
         let underground_field = UndergroundField::new(snapshot.seed);
         for z in 0..n {
             if cancelled() {
@@ -703,6 +944,13 @@ impl Volume {
             for x in 0..n {
                 let wx = origin + x as i32 * step as i32;
                 let wz = origin + z as i32 * step as i32;
+                if !options.shape.contains(
+                    wx as f32 + step as f32 * 0.5,
+                    wz as f32 + step as f32 * 0.5,
+                    size,
+                ) {
+                    continue;
+                }
                 let base = base_height(field, snapshot, wx, wz);
                 let (height, water) = if options.water {
                     pond_height(base, wx, wz, &volume.ponds)
@@ -731,6 +979,20 @@ impl Volume {
                 } else {
                     UndergroundColumn::default()
                 };
+                let mut slices = [[0.0; 2]; 64];
+                let mut slice_count = 0;
+                for range in caves.intervals().iter().chain(underground.intervals()) {
+                    slices[slice_count] = cave_slice(
+                        *range,
+                        wx,
+                        wz,
+                        height,
+                        cave_margin,
+                        snapshot.seed,
+                        parameters.cave_w,
+                    );
+                    slice_count += 1;
+                }
                 let column_limit = if density {
                     vertical
                 } else {
@@ -754,7 +1016,9 @@ impl Volume {
                     if solid
                         && options.caves
                         && wy >= 3
-                        && (caves.contains(wy) || underground.contains(wy))
+                        && slices[..slice_count]
+                            .iter()
+                            .any(|r| wy as f32 >= r[0] && wy as f32 <= r[1])
                     {
                         volume.carved[index] = true;
                         if options.water
@@ -981,6 +1245,9 @@ fn decorations(
             && p[0] < volume.origin + volume.size as i32
             && p[2] < volume.origin + volume.size as i32
             && (0..152).contains(&p[1])
+            && options
+                .shape
+                .contains(p[0] as f32 + 0.5, p[2] as f32 + 0.5, volume.size)
             && !villages.reserved(p[0], p[2])
             && options.underground_view.visible(p)
     };
