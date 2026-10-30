@@ -226,3 +226,26 @@ is unchanged and no Minecraft world persistence/collision/fluid simulation is cl
 - Same fresh isolated data homes and explicit silent diagnostic clock on
   Xvfb/CPU Vulkan; no Windows, hardware-GPU or audible-device claim.
 - [Actual scenes](WORLD_DETAILS.md); raw outputs: [verification/elements](verification/elements/).
+
+## Underground verification — 2026-10-30 UTC
+
+- `cargo test -p musicterrain`: **89 passed**, none ignored. Added five cave
+  interval/biome/aquifer/safety tests, six mine layout/connectivity/clipping/view/
+  geometry tests, and one material test increment (65 layers).
+- `cargo test -p musicterrain --no-default-features`: **51 passed**.
+- Strict all-target Clippy, native build, workspace format check, public-tree
+  scan, harness Python syntax and `git diff --check`: passed.
+- Native tests verify actual moss/dripstone/amethyst/lichen, deepslate/copper/
+  gold/diamond and rail/web/lantern output, section coordinates and scene switches.
+  Auto and Showcase plans both match clipped requests. Crossing frames do not
+  obstruct rail routes; every retained rail has a floor and belongs to a connected
+  traversable centre route in the flat fixture.
+- Actual complete UI harness `--scene --biomes --villages --underground` passed:
+  **46 editor events, 38 distinct uploaded meshes**. It exercised existing
+  controls plus mine Showcase/Off/Auto and Cutaway/Underground/Surface transitions,
+  waited for real geometry, captured PNGs and restored state.
+- CLI cutaway and horizontal slice each completed 91 native frames, real mine/
+  rail geometry and screenshot readback, with explicit silent clock and fresh
+  isolated data homes. CPU Vulkan/Xvfb only; hardware audio/GPU and Windows untested.
+- [Actual views and limitations](UNDERGROUND.md). Raw output:
+  [verification/underground](verification/underground/).

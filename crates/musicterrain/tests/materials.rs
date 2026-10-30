@@ -129,6 +129,9 @@ fn leaves_plants_and_water_keep_their_rendering_alpha() {
         Material::SugarCane,
         Material::Wheat,
         Material::Glass,
+        Material::Rail,
+        Material::Cobweb,
+        Material::GlowLichen,
     ] {
         let pixels = layer(&atlas, material);
         assert!(pixels.as_chunks::<4>().0.iter().any(|p| p[3] == 0));
@@ -288,7 +291,7 @@ fn biome_and_village_layers_append_ids_and_keep_solid_and_glass_contracts() {
     let atlas = TextureAtlas::load(None).unwrap();
     assert_eq!(Material::Bamboo.layer(), 36);
     assert_eq!(Material::SprucePlanks.layer(), 53);
-    assert_eq!(Material::ALL.len(), 54);
+    assert_eq!(Material::ALL[53], Material::SprucePlanks);
     for material in [
         Material::Melon,
         Material::Pumpkin,
@@ -316,4 +319,78 @@ fn biome_and_village_layers_append_ids_and_keep_solid_and_glass_contracts() {
     assert!(!Material::Glass.translucent());
     assert_eq!(glass[3], 255); // Outer frame is opaque.
     assert_eq!(glass[((8 * 32 + 8) * 4 + 3) as usize], 0); // Clear interior.
+}
+
+#[test]
+fn underground_layers_append_without_changing_old_ids_and_load_local_pngs() {
+    let materials = [
+        Material::Deepslate,
+        Material::CopperOre,
+        Material::GoldOre,
+        Material::DiamondOre,
+        Material::Moss,
+        Material::Dripstone,
+        Material::Amethyst,
+        Material::Rail,
+        Material::Cobweb,
+        Material::Lantern,
+        Material::GlowLichen,
+    ];
+    assert_eq!(Material::SprucePlanks.layer(), 53);
+    assert_eq!(&Material::ALL[54..], &materials);
+    assert_eq!(Material::ALL.len(), 65);
+    let names = [
+        "deepslate",
+        "copper_ore",
+        "gold_ore",
+        "diamond_ore",
+        "moss_block",
+        "dripstone_block",
+        "amethyst_block",
+        "rail",
+        "cobweb",
+        "lantern",
+        "glow_lichen",
+    ];
+    let fixture = Fixture::new();
+    for (i, name) in names.iter().enumerate() {
+        fixture.write(
+            &format!("{name}.png"),
+            2,
+            2,
+            &[20 + i as u8, 83, 121, 255].repeat(4),
+        );
+    }
+    let atlas = TextureAtlas::load(Some(&fixture.0)).unwrap();
+    assert_eq!(atlas.loaded, 11);
+    assert_eq!(atlas.fallback, 54);
+    for (i, material) in materials.into_iter().enumerate() {
+        assert!(
+            layer(&atlas, material)
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| *p == [20 + i as u8, 83, 121, 255])
+        );
+    }
+    let original = TextureAtlas::load(None).unwrap();
+    for material in [
+        Material::Deepslate,
+        Material::CopperOre,
+        Material::GoldOre,
+        Material::DiamondOre,
+        Material::Moss,
+        Material::Dripstone,
+        Material::Amethyst,
+        Material::Lantern,
+    ] {
+        assert!(
+            layer(&original, material)
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| p[3] == 255)
+        );
+        assert!(!material.translucent());
+    }
 }

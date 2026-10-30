@@ -214,3 +214,27 @@ It is not vanilla village jigsaw parity: natural eligibility is limited to the
 supported meadow/desert/savanna/taiga/alpine preview types; Jungle/forest/swamp
 villages require explicit Showcase. Villager entities, block behaviour, lighting,
 collision and save integration remain separate work.
+
+## Underground follow-up (2026-10-30)
+
+Inspected `crates/horizon-world/src/worldgen/structure/mineshaft.rs::generate`,
+`MineshaftPiece` and its Normal/Mesa wood bindings, plus
+`crates/horizon-world/src/worldgen/aquifer/noise_based.rs` and `AquiferBlockStates`.
+Upstream has rooms, corridors, crossings/stairs and stateful fluid-pressure
+selection. Its public layout generator returns pieces; placing them uses the
+legacy PieceContext/block-state pipeline. The aquifer consumes registry-backed
+states, density volumes, sampler contexts and positional randomness.
+
+The current preview still lacks that registry/server/heightmap/save adapter, so
+this increment adds original bounded preview logic instead of changing or
+claiming to port those vanilla paths: `underground.rs` computes cached analytic
+cave intervals with Horizon Simplex noise; `mineshaft.rs` builds full world-cell
+plans before clipping. `visual.rs` fills/carves the temporary volume, adds cave
+palette details, applies mine structures, then applies optional display masks
+and uploads existing Horizon section meshes. No second renderer is introduced.
+
+Mines sample actual pond-shaped roof heights over the full plan, including
+outside query bounds. Frames avoid rail junctions; rail planes carry direction.
+The preview remains Y0..128 and uses depth-relative geology. Exact modern
+Minecraft noise-router/fluid pressure, negative-Y terrain, loot/spawners/entities,
+block light/collision and persistent chunks are not part of this adapter.

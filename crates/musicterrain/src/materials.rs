@@ -70,10 +70,21 @@ pub enum Material {
     Path = 51,
     Sandstone = 52,
     SprucePlanks = 53,
+    Deepslate = 54,
+    CopperOre = 55,
+    GoldOre = 56,
+    DiamondOre = 57,
+    Moss = 58,
+    Dripstone = 59,
+    Amethyst = 60,
+    Rail = 61,
+    Cobweb = 62,
+    Lantern = 63,
+    GlowLichen = 64,
 }
 
 impl Material {
-    pub const ALL: [Self; 54] = [
+    pub const ALL: [Self; 65] = [
         Self::GrassTop,
         Self::GrassSide,
         Self::Dirt,
@@ -128,6 +139,17 @@ impl Material {
         Self::Path,
         Self::Sandstone,
         Self::SprucePlanks,
+        Self::Deepslate,
+        Self::CopperOre,
+        Self::GoldOre,
+        Self::DiamondOre,
+        Self::Moss,
+        Self::Dripstone,
+        Self::Amethyst,
+        Self::Rail,
+        Self::Cobweb,
+        Self::Lantern,
+        Self::GlowLichen,
     ];
 
     pub const fn layer(self) -> u16 {
@@ -222,6 +244,17 @@ impl Material {
             Self::Path => &["dirt_path_top.png"],
             Self::Sandstone => &["sandstone.png"],
             Self::SprucePlanks => &["spruce_planks.png"],
+            Self::Deepslate => &["deepslate.png"],
+            Self::CopperOre => &["copper_ore.png"],
+            Self::GoldOre => &["gold_ore.png"],
+            Self::DiamondOre => &["diamond_ore.png"],
+            Self::Moss => &["moss_block.png"],
+            Self::Dripstone => &["dripstone_block.png"],
+            Self::Amethyst => &["amethyst_block.png"],
+            Self::Rail => &["rail.png"],
+            Self::Cobweb => &["cobweb.png"],
+            Self::Lantern => &["lantern.png"],
+            Self::GlowLichen => &["glow_lichen.png"],
         }
     }
 }
@@ -736,6 +769,105 @@ fn procedural(material: Material) -> Vec<u8> {
                     shade / 2 - if grain.is_multiple_of(11) { 19 } else { 0 },
                     255,
                 ),
+                Material::Deepslate => {
+                    let fracture = y.is_multiple_of(4) || (x + (y / 4 % 2) * 5).is_multiple_of(9);
+                    color([65, 67, 72], shade / 2 - if fracture { 17 } else { 0 }, 255)
+                }
+                Material::CopperOre | Material::GoldOre | Material::DiamondOre => {
+                    let vein = hash(x / 3, y / 3, 59) % 7 < 3 && (x + y * 2) % 5 != 0;
+                    let rgb = if vein {
+                        match material {
+                            Material::CopperOre => {
+                                if grain.is_multiple_of(3) {
+                                    [75, 139, 111]
+                                } else {
+                                    [192, 114, 66]
+                                }
+                            }
+                            Material::GoldOre => [225, 183, 57],
+                            _ => [77, 201, 204],
+                        }
+                    } else if material == Material::DiamondOre {
+                        [72, 78, 84]
+                    } else {
+                        [124, 129, 127]
+                    };
+                    color(rgb, shade / 2, 255)
+                }
+                Material::Moss => color(
+                    [71, 109, 44],
+                    shade
+                        + if hash(x / 3, y / 3, 64) % 5 < 2 {
+                            18
+                        } else {
+                            0
+                        },
+                    255,
+                ),
+                Material::Dripstone => color(
+                    [143, 112, 88],
+                    shade / 2 - if (x + y / 4).is_multiple_of(5) { 23 } else { 0 },
+                    255,
+                ),
+                Material::Amethyst => {
+                    let facet = ((x + y) / 4 + (15 + x - y) / 4) % 3;
+                    color(
+                        [143, 97, 185],
+                        shade / 3 + facet as i32 * 17
+                            - if (x + y).is_multiple_of(7) { 31 } else { 0 },
+                        255,
+                    )
+                }
+                Material::Rail => {
+                    let rail = (3..=4).contains(&x) || (11..=12).contains(&x);
+                    let tie = (2..=13).contains(&x) && y % 5 < 2;
+                    if rail {
+                        color(
+                            [177, 179, 174],
+                            shade / 3 - if x == 3 || x == 11 { 34 } else { 0 },
+                            255,
+                        )
+                    } else {
+                        color([111, 78, 43], shade / 2, if tie { 255 } else { 0 })
+                    }
+                }
+                Material::Cobweb => {
+                    let dx = x as i32 - 8;
+                    let dy = y as i32 - 8;
+                    let spoke = dx == 0 || dy == 0 || dx.abs() == dy.abs();
+                    let strand = ((dx.abs() + dy.abs()) as u32).is_multiple_of(5)
+                        && dx.abs().max(dy.abs()) <= 7;
+                    color(
+                        [218, 220, 213],
+                        shade / 3,
+                        if spoke || strand { 255 } else { 0 },
+                    )
+                }
+                Material::Lantern => {
+                    let frame = x <= 2 || x >= 13 || y <= 2 || y >= 13 || (x == 7 && y <= 5);
+                    if frame {
+                        color([63, 67, 72], shade / 3, 255)
+                    } else {
+                        color(
+                            [247, 171, 52],
+                            shade / 2 + if (6..=10).contains(&y) { 31 } else { 0 },
+                            255,
+                        )
+                    }
+                }
+                Material::GlowLichen => {
+                    let patch = hash(x / 3, y / 3, 71) % 5 < 2;
+                    let branch = (x + y * 3).is_multiple_of(7) || (x * 2 + y).is_multiple_of(9);
+                    color(
+                        [132, 191, 166],
+                        shade / 2,
+                        if patch && (branch || grain % 4 < 2) {
+                            255
+                        } else {
+                            0
+                        },
+                    )
+                }
                 Material::Sandstone => color(
                     [207, 192, 143],
                     shade / 3

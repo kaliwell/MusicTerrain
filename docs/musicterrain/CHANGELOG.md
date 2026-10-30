@@ -70,3 +70,18 @@
   Auto / Showcase / Off is real UI/CLI state and part of cache identity.
 - Added real village/tile/switch/structure tests and native UI/render evidence.
   No ordinary Horizon gameplay/save modifications or vanilla-template claim.
+
+### Modern-style caves and abandoned mines — 2026-10-30 UTC
+
+- Added bounded analytic cave chambers, winding connectors, four underground
+  palettes, limited low aquifers, depth-relative deepslate and extra ore seams.
+- Added moss, short dripstone spikes, amethyst outcrops and cutout cave lichen;
+  appended eleven original material layers, preserving old IDs (65 total).
+- Added deterministic abandoned mine galleries, floors/supports, connected
+  directional rails, webs and lantern models. Roof safety samples full-plan
+  actual pond heights; support frames avoid crossings.
+- Added native Underground page, CLI modes, nonpersistent quadrant cutaway and
+  Y10 slice, cache/revision invalidation and actual geometry diagnostics.
+- Added real cave, clipping, connectivity, material, view and switch tests;
+  verified native renderer readback and complete UI interactions. No exact
+  vanilla/noise-router/persistence or negative-Y-world claim.

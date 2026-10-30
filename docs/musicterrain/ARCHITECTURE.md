@@ -95,3 +95,13 @@ audio band limits and parameters are validated before use. Adding fields should
 use explicit defaults/migrations; future version numbers must not silently load
 as old configurations. UI edit history stores bounded snapshots. The mode remains
 off unless the user explicitly launches/enables it.
+
+## Underground preview adapter
+
+The height-field preview unions Ecology entrance intervals with
+`UndergroundField`'s cached chamber/connector columns. `MineScene` produces bounded
+world-space air/material/detail plans before clipping. The native volume applies
+caves/geology, mines, village overlays and finally nonpersistent inspection masks.
+Rails/webs/lanterns and cave lichen reuse existing terrain/HUD rendering primitives.
+SceneOptions includes mine mode and underground view in cache identity. Existing
+bounded worker/revision propagation stays unchanged. See [UNDERGROUND](UNDERGROUND.md).

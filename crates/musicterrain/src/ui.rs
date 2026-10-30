@@ -16,6 +16,7 @@ pub enum Page {
     Settings,
     Diagnostics,
     World,
+    Underground,
 }
 #[derive(Clone, Copy, Debug)]
 pub enum RuleField {
@@ -61,6 +62,8 @@ pub enum Action {
     Caves,
     Biome,
     Villages,
+    Mines,
+    UndergroundView,
 }
 #[derive(Clone)]
 struct Hit {
@@ -254,6 +257,7 @@ impl Ui {
             (Page::Presets, "05 PRESETS"),
             (Page::Settings, "06 SETTINGS"),
             (Page::Diagnostics, "07 DIAGNOSTICS"),
+            (Page::Underground, "08 UNDERGROUND"),
         ];
         for (i, (p, label)) in pages.into_iter().enumerate() {
             self.button(
@@ -739,6 +743,48 @@ impl Ui {
                 };
                 text(&mut h, x, 663.0, &village_status, MUTED, 1.0);
             }
+            Page::Underground => {
+                self.button(
+                    &mut h,
+                    [x, 160.0, sw, 32.0],
+                    if v.scene_options.caves {
+                        "CAVES ON"
+                    } else {
+                        "CAVES OFF"
+                    },
+                    Action::Caves,
+                    v.scene_options.caves,
+                );
+                self.button(
+                    &mut h,
+                    [x, 204.0, sw, 32.0],
+                    &format!("MINES {}", v.scene_options.mines.name()),
+                    Action::Mines,
+                    false,
+                );
+                self.button(
+                    &mut h,
+                    [x, 248.0, sw, 32.0],
+                    &format!("VIEW {}", v.scene_options.underground_view.name()),
+                    Action::UndergroundView,
+                    false,
+                );
+                let lines = [
+                    "ORIGINAL MODERN-STYLE CAVES".to_owned(),
+                    "CHAMBERS + WINDING TUNNELS".into(),
+                    "LUSH / DRIPSTONE / DEEP".into(),
+                    "LOW AQUIFERS + ORE VEINS".into(),
+                    format!("MINES {}", v.scene.mines),
+                    format!("SUPPORTS {}", v.scene.supports),
+                    format!("RAIL SEGMENTS {}", v.scene.rails),
+                    "MINES REQUIRE 64 HEIGHT FIELD".into(),
+                    "CAVES OFF ALSO DISABLES MINES".into(),
+                    "PREVIEW Y 0..128, NO SAVE".into(),
+                ];
+                for (i, line) in lines.iter().enumerate() {
+                    text(&mut h, x, 310.0 + i as f32 * 27.0, line, INK, 1.0);
+                }
+            }
             Page::Diagnostics => {
                 let lines = [
                     format!("FRAME {:.2} MS", 1000.0 / v.fps.max(0.1)),
@@ -767,6 +813,7 @@ impl Ui {
                     format!("SILENCE {}", v.features.silence),
                     format!("TREES {} - PLANTS {}", v.scene.trees, v.scene.plants),
                     format!("CAVE FACES {}", v.scene.cave_faces),
+                    format!("MINES {} RAILS {}", v.scene.mines, v.scene.rails),
                     format!(
                         "VILLAGES {} HOUSES {} FARMS {}",
                         v.scene.villages, v.scene.houses, v.scene.farms

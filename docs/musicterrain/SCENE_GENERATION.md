@@ -58,3 +58,13 @@ whole/tiled ecology. Villages are full deterministic world-cell plans before
 clipping; their material cells are installed into the temporary volume before
 face culling, and their reserved footprint suppresses vegetation. Crops use
 existing cutout plant rendering. Details and limits: [WORLD_DETAILS](WORLD_DETAILS.md).
+
+## Modern-style underground increment
+
+The material volume now unions original entrance carving with cached
+UndergroundField chamber/connector intervals, applies cave surface palettes and
+bounded static aquifers, then original mine plans and village overlays. Optional
+inspection masks run after generation. Rail planes, web/lantern detail meshes
+and lichen overlays use existing Horizon vertices/sections. Mines and View are
+part of SceneOptions/revision/cache identity. See [UNDERGROUND](UNDERGROUND.md)
+for actual geometry, safety, budgets and remaining gameplay/save limitations.

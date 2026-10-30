@@ -50,3 +50,11 @@
   crop growth, climbing, collision and persistent-world integration are absent.
 - Sugar cane currently uses nominal level-8 banks; elevated preview ponds do not
   all receive it. Glass uses cutout frames, not a new blended-glass renderer.
+
+- Underground preview remains Y0..128, with deepslate based on sampled depth.
+  Its cave/low-aquifer/mine algorithms are original, not vanilla noise-router parity.
+- Detailed mines require a 64×64 height-field path; coarse/density previews suspend
+  them. Underground view is a fixed Y10 horizontal slice, not a movable slice slider.
+- Amethyst is a decorative outcrop, not a full geode structure. Lanterns/lichen
+  are visual details without emitted block light. No minecarts, loot, spawners,
+  entities, collisions or saved Minecraft regions are introduced.

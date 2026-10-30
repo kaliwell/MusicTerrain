@@ -18,6 +18,7 @@ def main():
     p.add_argument('--scene',action='store_true',help='verify real vegetation/water/cave switches')
     p.add_argument('--biomes',action='store_true',help='cycle every biome through the real Settings control')
     p.add_argument('--villages',action='store_true',help='verify actual village showcase/off geometry')
+    p.add_argument('--underground',action='store_true',help='verify mine toggles and underground views')
     a=p.parse_args();binary=a.binary.resolve();a.output.mkdir(parents=True,exist_ok=False);out=a.output.resolve()
     env=os.environ.copy();xdotool='xdotool'
     if a.sysroot:
@@ -91,6 +92,21 @@ def main():
                     click(1130,640);wait_until(lambda:houses()==0)
                     image('village-off.png')
                     click(1130,640)
+                if a.underground:
+                    click(100,405)
+                    def rails():
+                        records=[line for line in text().splitlines() if 'preview mesh uploaded' in line]
+                        match=re.search(r'rails=(\d+)',records[-1]) if records else None
+                        return int(match.group(1)) if match else -1
+                    before=text().count('preview mesh uploaded');click(1130,220)
+                    wait_until(lambda:text().count('preview mesh uploaded')>before and rails()>0)
+                    for name in ('cutaway','underground'):
+                        before=text().count('preview mesh uploaded');click(1130,265)
+                        wait_until(lambda:text().count('preview mesh uploaded')>before and rails()>0)
+                        image('mine-'+name+'.png')
+                    click(1130,220);wait_until(lambda:rails()==0)
+                    image('mine-off.png')
+                    click(1130,220);click(1130,265)
                 key('Right');time.sleep(.4)
                 click(100,185);time.sleep(.4);image('noise-lab.png')
                 click(1180,388);key('ctrl+z');key('ctrl+y')
@@ -110,7 +126,7 @@ def main():
         evidence=text()
         for action in ('Page(Noise)','Parameter(Amplitude','Undo','Redo','Save','Load','Preset(1)','Preset(3)','Page(Mapping)','Page(Diagnostics)','Seek('):
             assert action in evidence,f'expected actual UI event: {action}'
-        report={'village_switches_verified':a.villages,'biome_switches_verified':a.biomes,'scene_switches_verified':a.scene,'exit_code':process.returncode,'pause_stopped_mesh_updates':True,'save_preserved_existing_preset':True,'events':len(re.findall('editor action',evidence)),'distinct_mesh_hashes':len(set(re.findall(r'mesh_hash=(\d+)',evidence))),'screenshots':['noise-lab.png','wave-terrain.png','floating-islands.png','mapping-editor.png','diagnostics.png'],'clock':'explicit silent diagnostic clock'}
+        report={'underground_switches_verified':a.underground,'village_switches_verified':a.villages,'biome_switches_verified':a.biomes,'scene_switches_verified':a.scene,'exit_code':process.returncode,'pause_stopped_mesh_updates':True,'save_preserved_existing_preset':True,'events':len(re.findall('editor action',evidence)),'distinct_mesh_hashes':len(set(re.findall(r'mesh_hash=(\d+)',evidence))),'screenshots':['noise-lab.png','wave-terrain.png','floating-islands.png','mapping-editor.png','diagnostics.png'],'clock':'explicit silent diagnostic clock'}
         (out/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
         if process.returncode:raise SystemExit('interaction demo failed')
 

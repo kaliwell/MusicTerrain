@@ -528,6 +528,17 @@ impl App {
                 self.revision.0 = self.revision.0.wrapping_add(1);
                 self.dirty = true;
             }
+            Action::Mines => {
+                self.options.scene_options.mines = self.options.scene_options.mines.next();
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
+            Action::UndergroundView => {
+                self.options.scene_options.underground_view =
+                    self.options.scene_options.underground_view.next();
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
             Action::Villages => {
                 self.options.scene_options.villages = self.options.scene_options.villages.next();
                 self.revision.0 = self.revision.0.wrapping_add(1);
@@ -700,6 +711,9 @@ impl App {
                 audio_time = self.last_mesh_audio,
                 generation_ms = self.generation_ms,
                 revision = self.revision.0,
+                mines = self.scene.mines,
+                rails = self.scene.rails,
+                supports = self.scene.supports,
                 villages = self.scene.villages,
                 houses = self.scene.houses,
                 farms = self.scene.farms,

@@ -48,3 +48,15 @@ Do not treat the standalone demo as an integrated playable Minecraft world.
 - Partial: villages are preview geometry; exact vanilla jigsaw placement is not ported.
 - Not started: villagers/animals, gameplay collision, crop growth and world-save
   integration for these decorations.
+
+## Underground increment (2026-10-30)
+
+- Complete: modern-style cave chambers/connectors, four preview underground
+  palettes, bounded static aquifers, deepslate/ores and cave surface details.
+- Complete: abandoned mine plans, roof-safe corridors, wooden frames, directional
+  unobstructed rails, webs/lanterns; bounded full-plan clipping and cancellation.
+- Complete: Surface/Cutaway/Y10 inspection, native UI/CLI mode controls and cache
+  revisions; actual tests, renderer captures and interaction evidence.
+- Partial: these are original Y0..128 preview features, not vanilla parity.
+- Not started: full -64..320 Minecraft world, advanced underground structure
+  families, minecart/spawner/loot gameplay, collision/light updates and persistence.

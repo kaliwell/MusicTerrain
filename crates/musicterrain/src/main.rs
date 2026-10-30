@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
     if command == "help" || args.iter().any(|a| a == "--help" || a == "-h") {
         println!(
-            "MusicTerrain\n  demo | preview [--audio FILE] [--size 64|128|256] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB+WASD fly.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
+            "MusicTerrain\n  demo | preview [--audio FILE] [--size 64|128|256] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--mines off|auto|showcase] [--view surface|cutaway|underground]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB+WASD fly.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
         );
         return Ok(());
     }
@@ -59,6 +59,18 @@ fn run() -> Result<(), Box<dyn Error>> {
                             };
                         }
                         "--resources" => options.resources = Some(value(&args, &mut i)?.into()),
+                        "--mines" => {
+                            options.scene_options.mines =
+                                musicterrain::mineshaft::MineMode::parse(value(&args, &mut i)?)
+                                    .ok_or("--mines must be off, auto or showcase")?;
+                        }
+                        "--view" => {
+                            options.scene_options.underground_view =
+                                musicterrain::mineshaft::UndergroundView::parse(value(
+                                    &args, &mut i,
+                                )?)
+                                .ok_or("--view must be surface, cutaway or underground")?;
+                        }
                         "--villages" => {
                             options.scene_options.villages =
                                 musicterrain::village::VillageMode::parse(value(&args, &mut i)?)

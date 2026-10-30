@@ -1,0 +1,3 @@
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_interaction.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-underground-verified-ui --scene --biomes --villages --underground
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-subterranean-cutaway-isolated --frames 90 --mines showcase --view cutaway --villages off --require-mine
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-subterranean-slice --frames 90 --mines showcase --view underground --villages off --require-mine

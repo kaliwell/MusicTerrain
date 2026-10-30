@@ -86,3 +86,11 @@ It does not create server-side block states, structure starts, POIs or villagers
 The original resource-backed jigsaw/template path remains untouched. See
 [WORLD_DETAILS](WORLD_DETAILS.md) and the source audit follow-up for actual
 upstream interfaces and why this preview uses an isolated adapter.
+
+## Caves and mines
+
+Modern-style cave intervals and original mine layouts are applied only to the
+preview material volume. They reuse Horizon's noise/vertex/mesh/render resources;
+upstream registry-based aquifers and MineshaftPiece placement are untouched.
+The preview has no negative-Y extension, block collision/light updates, spawner
+or loot entities, or Minecraft persistence. See [UNDERGROUND](UNDERGROUND.md).

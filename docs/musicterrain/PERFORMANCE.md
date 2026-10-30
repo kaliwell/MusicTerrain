@@ -154,3 +154,25 @@ notice, instead of collapsing their full-resolution templates into coarse cells.
 Raw scene/performance samples, memory measurements and commands are preserved in
 [verification/elements](verification/elements/). Earlier development runs before
 the water/placement fixes were slower and are not the final figures above.
+
+## Underground measurements — 2026-10-30 UTC
+
+64² / 1280×800 native preview on the same two-CPU container and Xvfb/software
+Vulkan, explicit silent clock. Each run includes startup and screenshot readback
+and completed 91 frames. Figures are observations, not hardware guarantees.
+
+| View | Wall time | Sampled peak RSS | Mesh mean / max | One-second FPS windows |
+| --- | --- | --- | --- | --- |
+| Mine cutaway, isolated | 6.06 s | 207496 KiB (202.6 MiB) | 74.09 / 98.24 ms | 17.8–23.9 |
+| Mine Y10 slice | 5.48 s | 195600 KiB (191.0 MiB) | 56.21 / 99.47 ms | 17.7–29.7 |
+
+An earlier cutaway smoke overlapped Rust compilation and recorded 3.3–12.8 FPS
+and 155 ms mean mesh time; the isolated repeat above resolves that contention
+concern. Neither is an RTX3060/1080p/60 FPS or long-duration memory-leak claim.
+
+Cave intervals are fixed-capacity and computed per column, not allocated per
+voxel. Mine plans are bounded to 100,000 air and 60,000 solid cells per request,
+with per-corridor cancellation; detailed mines suspend in coarse/density paths.
+Overlay rails/webs/lanterns reuse existing GPU resources, and the one-slot queue,
+revision rejection and shutdown tests remain in place. Raw scene/performance
+samples and commands: [verification/underground](verification/underground/).

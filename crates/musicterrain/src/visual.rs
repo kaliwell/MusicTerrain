@@ -3,7 +3,9 @@
 use crate::{
     ecology::{CaveColumn, DecorationKind, Ecology, SceneBiome, SurfaceKind},
     materials::Material,
+    mineshaft::{MineMode, MineScene, UndergroundView},
     terrain::{GenerationRevision, TerrainField, TerrainSnapshot},
+    underground::{UndergroundBiome, UndergroundColumn, UndergroundField},
     village::{VillageMode, VillageScene},
 };
 use horizon_client_render::{
@@ -29,6 +31,8 @@ pub struct SceneOptions {
     pub caves: bool,
     pub biome: Option<SceneBiome>,
     pub villages: VillageMode,
+    pub mines: MineMode,
+    pub underground_view: UndergroundView,
 }
 impl Default for SceneOptions {
     fn default() -> Self {
@@ -38,6 +42,8 @@ impl Default for SceneOptions {
             caves: true,
             biome: None,
             villages: VillageMode::Auto,
+            mines: MineMode::Auto,
+            underground_view: UndergroundView::Surface,
         }
     }
 }
@@ -53,6 +59,9 @@ pub struct SceneStats {
     pub villages: u32,
     pub houses: u32,
     pub farms: u32,
+    pub mines: u32,
+    pub supports: u32,
+    pub rails: u32,
 }
 
 impl Default for SceneStats {
@@ -68,6 +77,9 @@ impl Default for SceneStats {
             villages: 0,
             houses: 0,
             farms: 0,
+            mines: 0,
+            supports: 0,
+            rails: 0,
         }
     }
 }
@@ -305,13 +317,17 @@ fn generate_mesh(
         snapshot, &field, &ecology, size, step, density, options, &cancelled,
     )?;
     // A clipped query may intersect a village whose full plan extends another
-    // 54 blocks beyond it. Water eligibility must use that whole world-space area.
-    let village_ponds =
-        if options.water && options.villages != VillageMode::Off && !density && step == 1 {
-            ponds(snapshot, &field, volume.origin - 64, size + 128)
-        } else {
-            Vec::new()
-        };
+    // 84 blocks beyond it (mines). Sample pond shape over full structure plans.
+    let structure_ponds = if options.water
+        && (options.villages != VillageMode::Off
+            || (options.caves && options.mines != MineMode::Off))
+        && !density
+        && step == 1
+    {
+        ponds(snapshot, &field, volume.origin - 96, size + 192)
+    } else {
+        Vec::new()
+    };
     let villages = if density || step > 1 {
         VillageScene::default()
     } else {
@@ -324,7 +340,7 @@ fn generate_mesh(
             |x, z| {
                 let h = base_height(&field, snapshot, x, z);
                 if options.water {
-                    let (ground, water) = pond_height(h, x, z, &village_ponds);
+                    let (ground, water) = pond_height(h, x, z, &structure_ponds);
                     if ground < water {
                         f32::NAN
                     } else {
@@ -337,7 +353,31 @@ fn generate_mesh(
             &cancelled,
         )?
     };
+    let mines = if options.caves && !density && step == 1 {
+        MineScene::generate(
+            snapshot.seed,
+            [volume.origin; 2],
+            size,
+            options.mines,
+            |x, z| {
+                let h = base_height(&field, snapshot, x, z);
+                if options.water {
+                    pond_height(h, x, z, &structure_ponds).0 as f32
+                } else {
+                    h as f32
+                }
+            },
+            &cancelled,
+        )?
+    } else {
+        MineScene::default()
+    };
+    volume.apply_mines(&mines);
     volume.apply_village(&villages, options.water);
+    volume.apply_view(options.underground_view);
+    builder.scene.mines = mines.mines;
+    builder.scene.supports = mines.supports;
+
     builder.scene.villages = villages.villages;
     builder.scene.houses = villages.houses;
     builder.scene.farms = villages.farms;
@@ -348,7 +388,7 @@ fn generate_mesh(
         .count() as u32;
     builder.scene.carved_voxels = volume.carved.iter().filter(|v| **v).count() as u32;
     volume.mesh(&mut builder, &cancelled)?;
-    if options.vegetation {
+    if options.vegetation && options.underground_view != UndergroundView::Underground {
         decorations(
             &mut builder,
             &volume,
@@ -359,8 +399,29 @@ fn generate_mesh(
             &cancelled,
         )?;
         for crop in &villages.crops {
-            builder.plant(*crop, Material::Wheat);
-            builder.scene.plants += 1;
+            if options.underground_view.visible(*crop) {
+                builder.plant(*crop, Material::Wheat);
+                builder.scene.plants += 1;
+            }
+        }
+    }
+    for &(p, axis) in &mines.rails {
+        if options.underground_view.visible(p)
+            && volume.world_get(p) == 0
+            && volume.world_get([p[0], p[1] - 1, p[2]]) != 0
+        {
+            builder.horizontal_detail(p, Material::Rail, axis == 0);
+            builder.scene.rails += 1;
+        }
+    }
+    for p in &mines.webs {
+        if options.underground_view.visible(*p) && volume.world_get(*p) == 0 {
+            builder.plant(*p, Material::Cobweb);
+        }
+    }
+    for p in &mines.lamps {
+        if options.underground_view.visible(*p) && volume.world_get(*p) == 0 {
+            builder.detail_box(*p, [0.25, 0.22, 0.25], [0.5, 0.65, 0.5], Material::Lantern);
         }
     }
     if cancelled() {
@@ -491,6 +552,8 @@ struct Volume {
     carved: Vec<bool>,
     surfaces: Vec<i32>,
     ponds: Vec<Pond>,
+    view: UndergroundView,
+    caves: bool,
 }
 impl Volume {
     fn index(&self, x: usize, y: usize, z: usize) -> usize {
@@ -534,6 +597,43 @@ impl Volume {
             None
         } else {
             Some(self.surfaces[(z / self.step) as usize * self.n + (x / self.step) as usize])
+        }
+    }
+    fn apply_mines(&mut self, scene: &MineScene) {
+        for p in &scene.air {
+            let index = self.index(
+                ((p[0] - self.origin) / self.step) as usize,
+                (p[1] / self.ystep) as usize,
+                ((p[2] - self.origin) / self.step) as usize,
+            );
+            self.cells[index] = 0;
+            self.carved[index] = true;
+        }
+        for (p, material) in &scene.blocks {
+            let index = self.index(
+                ((p[0] - self.origin) / self.step) as usize,
+                (p[1] / self.ystep) as usize,
+                ((p[2] - self.origin) / self.step) as usize,
+            );
+            self.cells[index] = encode(*material);
+            self.carved[index] = false;
+        }
+    }
+    fn apply_view(&mut self, view: UndergroundView) {
+        for z in 0..self.n {
+            for x in 0..self.n {
+                for y in 0..self.vertical {
+                    let p = [
+                        self.origin + x as i32 * self.step,
+                        y as i32 * self.ystep,
+                        self.origin + z as i32 * self.step,
+                    ];
+                    if !view.visible(p) {
+                        let index = self.index(x, y, z);
+                        self.cells[index] = 0;
+                    }
+                }
+            }
         }
     }
     fn apply_village(&mut self, scene: &VillageScene, water: bool) {
@@ -588,11 +688,14 @@ impl Volume {
             carved: vec![false; n * n * vertical],
             surfaces: vec![0; n * n],
             ponds: local_ponds,
+            view: options.underground_view,
+            caves: options.caves,
         };
         let mut parameters = snapshot.parameters.clone();
         if !options.caves {
             parameters.cave_threshold = 1.;
         }
+        let underground_field = UndergroundField::new(snapshot.seed);
         for z in 0..n {
             if cancelled() {
                 return None;
@@ -623,6 +726,11 @@ impl Volume {
                 } else {
                     CaveColumn::default()
                 };
+                let underground = if options.caves {
+                    underground_field.column(wx, wz, height as f32)
+                } else {
+                    UndergroundColumn::default()
+                };
                 let column_limit = if density {
                     vertical
                 } else {
@@ -643,8 +751,17 @@ impl Volume {
                     };
                     let solid = density_solid && !(options.water && wy >= height && height < base);
                     let index = volume.index(x, y, z);
-                    if solid && options.caves && wy >= 3 && caves.contains(wy) {
+                    if solid
+                        && options.caves
+                        && wy >= 3
+                        && (caves.contains(wy) || underground.contains(wy))
+                    {
                         volume.carved[index] = true;
+                        if options.water
+                            && underground.water_level().is_some_and(|level| wy <= level)
+                        {
+                            volume.cells[index] = encode(Material::Water);
+                        }
                         continue;
                     }
                     if solid {
@@ -660,7 +777,13 @@ impl Volume {
                                 wy.div_euclid(3),
                                 wz.div_euclid(3),
                             );
-                            if depth > 5 && vein.is_multiple_of(41) {
+                            if depth > 22 && vein % 113 == 11 {
+                                Material::DiamondOre
+                            } else if depth > 16 && vein % 79 == 5 {
+                                Material::GoldOre
+                            } else if depth > 8 && vein % 53 == 3 {
+                                Material::CopperOre
+                            } else if depth > 5 && vein.is_multiple_of(41) {
                                 Material::CoalOre
                             } else if depth > 9 && vein % 67 == 1 {
                                 Material::IronOre
@@ -668,6 +791,8 @@ impl Volume {
                                 Material::Gravel
                             } else if wy < 5 && vein % 37 == 2 {
                                 Material::Clay
+                            } else if depth > 20 {
+                                Material::Deepslate
                             } else {
                                 Material::Stone
                             }
@@ -679,7 +804,68 @@ impl Volume {
                 }
             }
         }
+        if options.caves {
+            volume.decorate_geology(&underground_field, snapshot.seed, cancelled)?;
+        }
         Some(volume)
+    }
+    fn decorate_geology(
+        &mut self,
+        field: &UndergroundField,
+        seed: i64,
+        cancelled: &impl Fn() -> bool,
+    ) -> Option<()> {
+        let mut edits = Vec::new();
+        for z in 0..self.n as i32 {
+            if cancelled() {
+                return None;
+            }
+            for x in 0..self.n as i32 {
+                let wx = self.origin + x * self.step;
+                let wz = self.origin + z * self.step;
+                let column = field.column(
+                    wx,
+                    wz,
+                    self.surfaces[z as usize * self.n + x as usize] as f32,
+                );
+                for y in 3..self.vertical as i32 - 1 {
+                    let material = decode(self.get(x, y, z));
+                    if material.is_none() || material == Some(Material::Water) {
+                        continue;
+                    }
+                    let id = hash(seed, wx, y * self.ystep, wz);
+                    let floor = self.get(x, y + 1, z) == 0 && self.is_carved(x, y + 1, z);
+                    let ceiling = self.get(x, y - 1, z) == 0 && self.is_carved(x, y - 1, z);
+                    if !floor && !ceiling {
+                        continue;
+                    }
+                    match column.biome() {
+                        UndergroundBiome::Lush if !id.is_multiple_of(3) => {
+                            edits.push((x, y, z, Material::Moss))
+                        }
+                        UndergroundBiome::Dripstone if id.is_multiple_of(5) => {
+                            for d in 1..=1 + (id % 3) as i32 {
+                                let qy = if floor { y + d } else { y - d };
+                                if self.get(x, qy, z) != 0 || qy < 3 {
+                                    break;
+                                }
+                                edits.push((x, qy, z, Material::Dripstone));
+                            }
+                        }
+                        UndergroundBiome::Deep if id.is_multiple_of(17) => {
+                            edits.push((x, y, z, Material::Amethyst))
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        for (x, y, z, m) in edits {
+            let i = self.index(x as usize, y as usize, z as usize);
+            self.cells[i] = encode(m);
+            self.carved[i] = false;
+        }
+        Some(())
     }
     fn mesh(&self, builder: &mut MeshBuilder<'_>, cancelled: &impl Fn() -> bool) -> Option<()> {
         for z in 0..self.n as i32 {
@@ -727,7 +913,11 @@ impl Volume {
                         let depth =
                             (self.surfaces[z as usize * self.n + x as usize] - anchor[1]).max(0);
                         let shade = if cave {
-                            (1. - depth as f32 * 0.045).clamp(0.22, 0.72)
+                            if self.view == UndergroundView::Surface {
+                                (1. - depth as f32 * 0.045).clamp(0.22, 0.72)
+                            } else {
+                                0.78
+                            }
                         } else {
                             1.
                         };
@@ -739,6 +929,14 @@ impl Volume {
                             shade,
                             cave,
                         );
+                        if self.caves
+                            && cave
+                            && depth > 4
+                            && hash(builder.snapshot.seed, anchor[0], anchor[1], anchor[2])
+                                .is_multiple_of(37)
+                        {
+                            builder.face_overlay(anchor, face, Material::GlowLichen);
+                        }
                         y = end;
                     }
                 }
@@ -784,6 +982,7 @@ fn decorations(
             && p[2] < volume.origin + volume.size as i32
             && (0..152).contains(&p[1])
             && !villages.reserved(p[0], p[2])
+            && options.underground_view.visible(p)
     };
     for decoration in layout {
         if cancelled() {
@@ -1219,6 +1418,36 @@ impl<'a> MeshBuilder<'a> {
                 self.quad(at, corners, uv, material, face.shade() * ambient, cave);
             }
         }
+    }
+    fn face_overlay(&mut self, anchor: [i32; 3], face: Face, material: Material) {
+        let n = face.normal();
+        let air_anchor = std::array::from_fn(|i| anchor[i] + n[i]);
+        let corners = face
+            .corners()
+            .map(|p| std::array::from_fn(|i| anchor[i] as f32 + p[i] as f32 + n[i] as f32 * 0.003));
+        self.quad(
+            air_anchor,
+            corners,
+            [[0., 1.], [0., 0.], [1., 0.], [1., 1.]],
+            material,
+            1.,
+            false,
+        );
+    }
+    fn horizontal_detail(&mut self, anchor: [i32; 3], material: Material, rotate: bool) {
+        let [x, y, z] = anchor.map(|v| v as f32);
+        let corners = [
+            [x, y + 0.015, z],
+            [x, y + 0.015, z + 1.],
+            [x + 1., y + 0.015, z + 1.],
+            [x + 1., y + 0.015, z],
+        ];
+        let uv = if rotate {
+            [[0., 0.], [1., 0.], [1., 1.], [0., 1.]]
+        } else {
+            [[0., 1.], [0., 0.], [1., 0.], [1., 1.]]
+        };
+        self.quad(anchor, corners, uv, material, 1., false);
     }
     fn detail_box(
         &mut self,

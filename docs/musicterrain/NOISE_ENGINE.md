@@ -68,3 +68,12 @@ parameter effects, cave/island topology, ordered combining, pause stability,
 graph-edit state reset, invalid ranges, silent/nonfinite features, all seven
 preset differences and versioned serialization. See `TEST_REPORT.md` for actual
 commands and results; the existence of these tests is not a passing result.
+
+## Modern-style cave preview
+
+`UndergroundField` adds analytic ellipsoid chambers and globally winding tube
+families, sampled as fixed-capacity merged vertical intervals. Horizon seeded
+Simplex selects cave palettes and low aquifers. These are preview-specific fields,
+not modifications to the core exported height/density function or a vanilla
+noise-router port. Mines use separate deterministic world-cell structure plans.
+The display cutaway/slice does not change the cave/mine generation inputs.

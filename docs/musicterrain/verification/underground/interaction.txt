@@ -1,0 +1,19 @@
+{
+  "underground_switches_verified": true,
+  "village_switches_verified": true,
+  "biome_switches_verified": true,
+  "scene_switches_verified": true,
+  "exit_code": 0,
+  "pause_stopped_mesh_updates": true,
+  "save_preserved_existing_preset": true,
+  "events": 46,
+  "distinct_mesh_hashes": 38,
+  "screenshots": [
+    "noise-lab.png",
+    "wave-terrain.png",
+    "floating-islands.png",
+    "mapping-editor.png",
+    "diagnostics.png"
+  ],
+  "clock": "explicit silent diagnostic clock"
+}

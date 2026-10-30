@@ -61,3 +61,13 @@ follow the existing controls. The bottom status reports house/farm counts, or
 **HEIGHT FIELD ONLY** for density/island previews or **SELECT 64 X 64** for
 large extents. Diagnostics also reports village,
 house and farm counts. `--villages off|auto|showcase` sets the same runtime option.
+
+## Underground page
+
+Navigation entry **08 UNDERGROUND** opens functional Caves, Mines Auto/Showcase/Off
+and View Surface/Cutaway/Underground controls. It displays actual emitted rail
+counts and mine-plan/support counts plus the height-field/64 extent limitation.
+Cutaway exposes an X/Z quadrant; Underground slices at Y10 and hides surface
+vegetation. These are render masks, never persistent world edits. CLI mirrors
+controls with `--mines` and `--view`; editing them increments revision/invalidates
+cached meshes. Existing navigation/control coordinates remain unchanged.

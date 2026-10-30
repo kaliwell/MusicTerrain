@@ -6,6 +6,8 @@ pub mod ecology;
 pub mod mapping;
 #[cfg(feature = "native")]
 pub mod materials;
+#[cfg(feature = "native")]
+pub mod mineshaft;
 pub mod preset;
 #[cfg(feature = "native")]
 pub mod preview;
@@ -15,6 +17,7 @@ pub mod terrain;
 pub mod transport;
 #[cfg(feature = "native")]
 pub mod ui;
+pub mod underground;
 #[cfg(feature = "native")]
 pub mod village;
 #[cfg(feature = "native")]

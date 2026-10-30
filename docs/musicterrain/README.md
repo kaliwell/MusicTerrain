@@ -61,7 +61,7 @@ cargo run -p musicterrain -- demo --silent-preview
 The default preview now includes grass/dirt/stone layers, oak trees, cutout grass
 and flowers, sand banks, translucent pond water, coal/iron ore, gravel/clay and
 actual carved cave entrances/walls. Alpine terrain uses snow. Daylight sky and
-block clouds use Horizon's existing renderer. All 54 built-in texture layers are
+block clouds use Horizon's existing renderer. All 65 built-in texture layers are
 original generated pixel art; no Minecraft texture is bundled or downloaded.
 
 Eleven seeded biomes are available: meadow, forest, alpine, shore, birch forest,
@@ -171,3 +171,10 @@ DISPLAY=:100 XDG_RUNTIME_DIR=/workspace/scratch/runtime LP_NUM_THREADS=2 LD_LIBR
 
 The window is on Xvfb, so it is not a physical desktop display. On a local desktop,
 use the normal `cargo run -p musicterrain -- demo` command to request real audio.
+
+## Underground inspection
+
+Modern-style chambers/connectors, cave palettes/aquifers/ores and original abandoned
+mine galleries are available. Open **08 UNDERGROUND** for Caves/Mines/View controls,
+or launch `demo --mines showcase --view cutaway`. Horizontal `--view underground`
+exposes a Y10 slice. See [underground details and actual limits](UNDERGROUND.md).
