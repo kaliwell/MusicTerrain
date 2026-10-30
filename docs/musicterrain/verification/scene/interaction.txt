@@ -1,0 +1,77 @@
+2026-10-30T01:20:13.701630Z  INFO session started session_id=000000000000000018e329f62023c278-000026c5 file_logging=false
+2026-10-30T01:20:13.725194Z  INFO preview material atlas prepared loaded_materials=0 material_layers=17
+2026-10-30T01:20:14.410384Z  INFO Horizon preview renderer ready adapter=llvmpipe (LLVM 19.1.7, 256 bits) backend=Vulkan device_type=Cpu
+2026-10-30T01:20:14.410633Z  INFO parameter snapshot changed revision=2 preset_version=1 seed=42
+2026-10-30T01:20:14.531857Z  INFO preview mesh uploaded mesh_hash=7250482381480741753 audio_time=0.00067621 generation_ms=69.32486724853516 revision=2 trees=3 plants=84 cave_faces=3026 water_quads=266 material_kinds=16
+2026-10-30T01:20:14.682241Z  INFO preview mesh uploaded mesh_hash=12680232700851835605 audio_time=0.114179182 generation_ms=72.02227783203125 revision=2 trees=8 plants=78 cave_faces=3181 water_quads=233 material_kinds=16
+2026-10-30T01:20:14.754632Z  INFO preview mesh uploaded mesh_hash=15270744307232031660 audio_time=0.26538789 generation_ms=54.71314239501953 revision=2 trees=11 plants=77 cave_faces=3049 water_quads=253 material_kinds=16
+2026-10-30T01:20:14.938263Z  INFO preview mesh uploaded mesh_hash=12761162327234528456 audio_time=0.397997984 generation_ms=80.6478271484375 revision=2 trees=11 plants=77 cave_faces=2909 water_quads=254 material_kinds=16
+2026-10-30T01:20:15.053046Z  INFO editor action action=Play audio_time=0.642410659 revision=2
+2026-10-30T01:20:15.060161Z  INFO preview mesh uploaded mesh_hash=9014701529015136217 audio_time=0.526118281 generation_ms=100.54594421386719 revision=2 trees=4 plants=81 cave_faces=3332 water_quads=358 material_kinds=16
+2026-10-30T01:20:15.212789Z  INFO preview mesh uploaded mesh_hash=16598682959690715762 audio_time=0.6424583333333334 generation_ms=85.578369140625 revision=2 trees=12 plants=77 cave_faces=2985 water_quads=284 material_kinds=16
+2026-10-30T01:20:15.569117Z  INFO preview performance frame_ms_mean=74.57144507142857 frame_ms_max=151.208583 fps=13.409958718677716 frames=14 queued_jobs=0 busy=false generation_ms=85.578369140625 upload_ms=0.9372310042381287 audio_time=0.6424583333333334 revision=2 startup_frames_skipped=2
+2026-10-30T01:20:16.390224Z  INFO editor action action=Page(Settings) audio_time=0.6424583333333334 revision=2
+2026-10-30T01:20:16.453940Z  INFO preview mesh uploaded mesh_hash=16598682959690715762 audio_time=0.6424583333333334 generation_ms=57.75093078613281 revision=3 trees=12 plants=77 cave_faces=2985 water_quads=284 material_kinds=16
+2026-10-30T01:20:16.656778Z  INFO preview performance frame_ms_mean=67.752956625 frame_ms_max=113.334681 fps=14.759503493475773 frames=16 queued_jobs=0 busy=false generation_ms=57.75093078613281 upload_ms=0.7004169821739197 audio_time=0.6424583333333334 revision=3 startup_frames_skipped=2
+2026-10-30T01:20:16.724032Z  INFO editor action action=Vegetation audio_time=0.6424583333333334 revision=3
+2026-10-30T01:20:16.797964Z  INFO preview mesh uploaded mesh_hash=5397051623891717598 audio_time=0.6424583333333334 generation_ms=46.32742691040039 revision=4 trees=0 plants=0 cave_faces=2985 water_quads=284 material_kinds=10
+2026-10-30T01:20:17.091739Z  INFO editor action action=Water audio_time=0.6424583333333334 revision=4
+2026-10-30T01:20:17.201042Z  INFO preview mesh uploaded mesh_hash=5039527168037110623 audio_time=0.6424583333333334 generation_ms=58.470375061035156 revision=5 trees=0 plants=0 cave_faces=2974 water_quads=0 material_kinds=8
+2026-10-30T01:20:17.472117Z  INFO editor action action=Caves audio_time=0.6424583333333334 revision=5
+2026-10-30T01:20:17.526848Z  INFO preview mesh uploaded mesh_hash=4193389540275189144 audio_time=0.6424583333333334 generation_ms=49.14555358886719 revision=6 trees=0 plants=0 cave_faces=0 water_quads=0 material_kinds=8
+2026-10-30T01:20:17.687964Z  INFO preview performance frame_ms_mean=51.413885699999994 frame_ms_max=73.114344 fps=19.449998504975866 frames=20 queued_jobs=0 busy=false generation_ms=49.14555358886719 upload_ms=0.5936099886894226 audio_time=0.6424583333333334 revision=6 startup_frames_skipped=2
+2026-10-30T01:20:18.196294Z  INFO editor action action=Vegetation audio_time=0.6424583333333334 revision=6
+2026-10-30T01:20:18.261351Z  INFO preview mesh uploaded mesh_hash=18436591612539795580 audio_time=0.6424583333333334 generation_ms=55.08521270751953 revision=7 trees=12 plants=81 cave_faces=0 water_quads=0 material_kinds=14
+2026-10-30T01:20:18.583606Z  INFO editor action action=Water audio_time=0.6424583333333334 revision=7
+2026-10-30T01:20:18.632868Z  INFO preview mesh uploaded mesh_hash=5309951328608455670 audio_time=0.6424583333333334 generation_ms=36.50315475463867 revision=8 trees=12 plants=77 cave_faces=0 water_quads=284 material_kinds=16
+2026-10-30T01:20:18.781127Z  INFO preview performance frame_ms_mean=52.366545476190474 frame_ms_max=148.906787 fps=19.09616131647772 frames=21 queued_jobs=0 busy=false generation_ms=36.50315475463867 upload_ms=0.9296109676361084 audio_time=0.6424583333333334 revision=8 startup_frames_skipped=2
+2026-10-30T01:20:18.948805Z  INFO editor action action=Caves audio_time=0.6424583333333334 revision=8
+2026-10-30T01:20:19.010968Z  INFO preview mesh uploaded mesh_hash=16598682959690715762 audio_time=0.6424583333333334 generation_ms=59.595703125 revision=9 trees=12 plants=77 cave_faces=2985 water_quads=284 material_kinds=16
+2026-10-30T01:20:19.617285Z  INFO editor action action=Seek(5.642458333333334) audio_time=0.6424583333333334 revision=9
+2026-10-30T01:20:19.675863Z  INFO preview mesh uploaded mesh_hash=2435924952746687994 audio_time=5.642458333333333 generation_ms=52.3539924621582 revision=10 trees=11 plants=78 cave_faces=3044 water_quads=294 material_kinds=16
+2026-10-30T01:20:19.791490Z  INFO preview performance frame_ms_mean=53.17335084210526 frame_ms_max=72.149327 fps=18.8064130652483 frames=19 queued_jobs=0 busy=false generation_ms=52.3539924621582 upload_ms=1.6287999153137207 audio_time=5.642458333333333 revision=10 startup_frames_skipped=2
+2026-10-30T01:20:20.263841Z  INFO editor action action=Page(Noise) audio_time=5.642458333333333 revision=10
+2026-10-30T01:20:20.359103Z  INFO preview mesh uploaded mesh_hash=2660891668070572190 audio_time=5.642458333333333 generation_ms=44.99147033691406 revision=11 trees=10 plants=76 cave_faces=3215 water_quads=266 material_kinds=16
+2026-10-30T01:20:20.874867Z  INFO preview performance frame_ms_mean=60.07790166666666 frame_ms_max=95.607509 fps=16.645055374076676 frames=18 queued_jobs=0 busy=false generation_ms=44.99147033691406 upload_ms=1.4490749835968018 audio_time=5.642458333333333 revision=11 startup_frames_skipped=2
+2026-10-30T01:20:21.449932Z  INFO editor action action=Parameter(Amplitude, 53.781513) audio_time=5.642458333333333 revision=11
+2026-10-30T01:20:21.449983Z  INFO parameter snapshot changed revision=12 preset_version=1 seed=42
+2026-10-30T01:20:21.586302Z  INFO preview mesh uploaded mesh_hash=18390945576650001469 audio_time=5.642458333333333 generation_ms=91.73596954345703 revision=12 trees=3 plants=77 cave_faces=3488 water_quads=302 material_kinds=17
+2026-10-30T01:20:21.782782Z  INFO editor action action=Undo audio_time=5.642458333333333 revision=12
+2026-10-30T01:20:21.782834Z  INFO parameter snapshot changed revision=13 preset_version=1 seed=42
+2026-10-30T01:20:21.872628Z  INFO preview mesh uploaded mesh_hash=2660891668070572190 audio_time=5.642458333333333 generation_ms=75.49163055419922 revision=13 trees=10 plants=76 cave_faces=3215 water_quads=266 material_kinds=16
+2026-10-30T01:20:21.931969Z  INFO preview performance frame_ms_mean=75.60811014285714 frame_ms_max=119.81304700000001 fps=13.226094371497421 frames=14 queued_jobs=0 busy=false generation_ms=75.49163055419922 upload_ms=1.6245290040969849 audio_time=5.642458333333333 revision=13 startup_frames_skipped=2
+2026-10-30T01:20:22.062547Z  INFO editor action action=Redo audio_time=5.642458333333333 revision=13
+2026-10-30T01:20:22.062604Z  INFO parameter snapshot changed revision=14 preset_version=1 seed=42
+2026-10-30T01:20:22.215528Z  INFO preview mesh uploaded mesh_hash=18390945576650001469 audio_time=5.642458333333333 generation_ms=92.9892578125 revision=14 trees=3 plants=77 cave_faces=3488 water_quads=302 material_kinds=17
+2026-10-30T01:20:22.287994Z  INFO editor action action=Save audio_time=5.642458333333333 revision=14
+2026-10-30T01:20:22.629509Z  INFO editor action action=Save audio_time=5.642458333333333 revision=14
+2026-10-30T01:20:22.948030Z  INFO preview performance frame_ms_mean=72.606966 frame_ms_max=100.9068 fps=13.772783178958338 frames=14 queued_jobs=0 busy=false generation_ms=92.9892578125 upload_ms=1.3100720643997192 audio_time=5.642458333333333 revision=14 startup_frames_skipped=2
+2026-10-30T01:20:23.007132Z  INFO editor action action=Load audio_time=5.642458333333333 revision=14
+2026-10-30T01:20:23.007322Z  INFO parameter snapshot changed revision=15 preset_version=1 seed=42
+2026-10-30T01:20:23.176983Z  INFO preview mesh uploaded mesh_hash=18390945576650001469 audio_time=5.642458333333333 generation_ms=91.40222930908203 revision=15 trees=3 plants=77 cave_faces=3488 water_quads=302 material_kinds=17
+2026-10-30T01:20:23.397362Z  INFO editor action action=Page(Presets) audio_time=5.642458333333333 revision=15
+2026-10-30T01:20:23.472350Z  INFO preview mesh uploaded mesh_hash=2338410895501125878 audio_time=5.642458333333333 generation_ms=55.65336608886719 revision=16 trees=8 plants=79 cave_faces=3175 water_quads=303 material_kinds=16
+2026-10-30T01:20:23.746729Z  INFO editor action action=Preset(1) audio_time=5.642458333333333 revision=16
+2026-10-30T01:20:23.746784Z  INFO parameter snapshot changed revision=17 preset_version=1 seed=42
+2026-10-30T01:20:23.807222Z  INFO preview mesh uploaded mesh_hash=9770980592263229201 audio_time=5.642458333333333 generation_ms=53.38234329223633 revision=17 trees=6 plants=61 cave_faces=702 water_quads=776 material_kinds=16
+2026-10-30T01:20:23.951339Z  INFO preview performance frame_ms_mean=58.986618941176474 frame_ms_max=85.512477 fps=16.952997441627144 frames=17 queued_jobs=0 busy=false generation_ms=53.38234329223633 upload_ms=0.6223130226135254 audio_time=5.642458333333333 revision=17 startup_frames_skipped=2
+2026-10-30T01:20:24.964794Z  INFO editor action action=Preset(3) audio_time=5.642458333333333 revision=17
+2026-10-30T01:20:24.965271Z  INFO parameter snapshot changed revision=18 preset_version=1 seed=42
+2026-10-30T01:20:24.968586Z  INFO preview performance frame_ms_mean=50.7882254 frame_ms_max=117.140541 fps=19.689603094499933 frames=20 queued_jobs=0 busy=true generation_ms=53.38234329223633 upload_ms=0.6223130226135254 audio_time=5.642458333333333 revision=18 startup_frames_skipped=2
+2026-10-30T01:20:25.061028Z  INFO preview mesh uploaded mesh_hash=2779677343829810438 audio_time=5.642458333333333 generation_ms=69.98249053955078 revision=18 trees=0 plants=2 cave_faces=0 water_quads=1532 material_kinds=9
+2026-10-30T01:20:25.991590Z  INFO preview performance frame_ms_mean=42.58846441666667 frame_ms_max=57.805622 fps=23.48053665932735 frames=24 queued_jobs=0 busy=false generation_ms=69.98249053955078 upload_ms=0.8225269913673401 audio_time=5.642458333333333 revision=18 startup_frames_skipped=2
+2026-10-30T01:20:26.664423Z  INFO editor action action=Page(Mapping) audio_time=5.642458333333333 revision=18
+2026-10-30T01:20:26.774999Z  INFO preview mesh uploaded mesh_hash=2779677343829810438 audio_time=5.642458333333333 generation_ms=87.04228210449219 revision=19 trees=0 plants=2 cave_faces=0 water_quads=1532 material_kinds=9
+2026-10-30T01:20:27.029699Z  INFO preview performance frame_ms_mean=54.73784957894736 frame_ms_max=95.458062 fps=18.268894516174203 frames=19 queued_jobs=0 busy=false generation_ms=87.04228210449219 upload_ms=3.2672038078308105 audio_time=5.642458333333333 revision=19 startup_frames_skipped=2
+2026-10-30T01:20:27.823802Z  INFO editor action action=Page(Diagnostics) audio_time=5.642458333333333 revision=19
+2026-10-30T01:20:27.938752Z  INFO preview mesh uploaded mesh_hash=2779677343829810438 audio_time=5.642458333333333 generation_ms=78.76892852783203 revision=20 trees=0 plants=2 cave_faces=0 water_quads=1532 material_kinds=9
+2026-10-30T01:20:28.052999Z  INFO preview performance frame_ms_mean=53.87021863157895 frame_ms_max=95.576143 fps=18.563132383758244 frames=19 queued_jobs=0 busy=false generation_ms=78.76892852783203 upload_ms=2.9062719345092773 audio_time=5.642458333333333 revision=20 startup_frames_skipped=2
+2026-10-30T01:20:28.993714Z  INFO editor action action=Play audio_time=5.642458333333333 revision=20
+2026-10-30T01:20:29.100655Z  INFO preview performance frame_ms_mean=52.39224275 frame_ms_max=121.031695 fps=19.086795058033665 frames=20 queued_jobs=0 busy=true generation_ms=78.76892852783203 upload_ms=2.9062719345092773 audio_time=5.748294106333333 revision=20 startup_frames_skipped=2
+2026-10-30T01:20:29.139564Z  INFO preview mesh uploaded mesh_hash=3405517853474529755 audio_time=5.688245913333333 generation_ms=79.15831756591797 revision=20 trees=0 plants=0 cave_faces=0 water_quads=1553 material_kinds=6
+2026-10-30T01:20:29.230649Z  INFO preview mesh uploaded mesh_hash=6371631529203361295 audio_time=5.7868015523333325 generation_ms=62.04031753540039 revision=20 trees=0 plants=0 cave_faces=0 water_quads=1690 material_kinds=5
+2026-10-30T01:20:29.360241Z  INFO preview mesh uploaded mesh_hash=17503491169326031447 audio_time=5.913885439333333 generation_ms=70.86353302001953 revision=20 trees=0 plants=0 cave_faces=0 water_quads=1696 material_kinds=5
+2026-10-30T01:20:29.459112Z  INFO preview mesh uploaded mesh_hash=9669979881902402094 audio_time=6.005046176333333 generation_ms=85.58284759521484 revision=20 trees=1 plants=10 cave_faces=0 water_quads=1477 material_kinds=15
+2026-10-30T01:20:29.565870Z  INFO preview mesh uploaded mesh_hash=9428758112198108602 audio_time=6.107047020333333 generation_ms=80.82876586914063 revision=20 trees=0 plants=4 cave_faces=0 water_quads=1443 material_kinds=11
+2026-10-30T01:20:29.710735Z  INFO preview mesh uploaded mesh_hash=10074840253289041517 audio_time=6.253936944333333 generation_ms=81.92678833007813 revision=20 trees=0 plants=0 cave_faces=0 water_quads=1556 material_kinds=6
+2026-10-30T01:20:29.838399Z  INFO preview mesh uploaded mesh_hash=747050453947887693 audio_time=6.357958577333333 generation_ms=85.88019561767578 revision=20 trees=0 plants=0 cave_faces=0 water_quads=1598 material_kinds=6

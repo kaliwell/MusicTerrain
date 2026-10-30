@@ -15,6 +15,7 @@ def main():
     p.add_argument('--binary',type=Path,default=Path('target/debug/musicterrain'))
     p.add_argument('--sysroot',type=Path)
     p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--scene',action='store_true',help='verify real vegetation/water/cave switches')
     a=p.parse_args();binary=a.binary.resolve();a.output.mkdir(parents=True,exist_ok=False);out=a.output.resolve()
     env=os.environ.copy();xdotool='xdotool'
     if a.sysroot:
@@ -44,9 +45,28 @@ def main():
                 def click(x,y):xdo('mousemove','--window',window,x,y,'click','1');time.sleep(.25)
                 def key(k):xdo('key','--window',window,k);time.sleep(.2)
                 def image(name):subprocess.run(['import','-window',window,str(out/name)],env=env,check=True)
-                key('space');time.sleep(.6)
-                stable_count=text().count('preview mesh uploaded');time.sleep(.7)
+                key('space')
+                stable_since=time.monotonic();stable_count=text().count('preview mesh uploaded')
+                deadline=time.monotonic()+10
+                while time.monotonic()-stable_since < .8:
+                    count=text().count('preview mesh uploaded')
+                    if count!=stable_count:stable_count=count;stable_since=time.monotonic()
+                    assert time.monotonic()<deadline,'paused worker did not drain'
+                    time.sleep(.05)
+                time.sleep(.3)
                 assert text().count('preview mesh uploaded')==stable_count,'paused terrain should stop rebuilding'
+                if a.scene:
+                    def last_scene():
+                        records=[line for line in text().splitlines() if 'preview mesh uploaded' in line]
+                        return dict((k,int(v)) for k,v in re.findall(r'(trees|plants|cave_faces|water_quads)=(\d+)',records[-1])) if records else {}
+                    click(100,315)
+                    click(1130,484);wait_until(lambda:last_scene().get('trees')==0 and last_scene().get('plants')==0)
+                    click(1130,523);wait_until(lambda:last_scene().get('water_quads')==0)
+                    click(1130,561);wait_until(lambda:last_scene().get('cave_faces')==0)
+                    image('scene-disabled.png')
+                    click(1130,484);click(1130,523);click(1130,561)
+                    wait_until(lambda:all(last_scene().get(k,0)>0 for k in ('trees','plants','cave_faces','water_quads')))
+                    image('scene-enabled.png')
                 key('Right');time.sleep(.4)
                 click(100,185);time.sleep(.4);image('noise-lab.png')
                 click(1180,388);key('ctrl+z');key('ctrl+y')
@@ -66,7 +86,7 @@ def main():
         evidence=text()
         for action in ('Page(Noise)','Parameter(Amplitude','Undo','Redo','Save','Load','Preset(1)','Preset(3)','Page(Mapping)','Page(Diagnostics)','Seek('):
             assert action in evidence,f'expected actual UI event: {action}'
-        report={'exit_code':process.returncode,'pause_stopped_mesh_updates':True,'save_preserved_existing_preset':True,'events':len(re.findall('editor action',evidence)),'distinct_mesh_hashes':len(set(re.findall(r'mesh_hash=(\d+)',evidence))),'screenshots':['noise-lab.png','wave-terrain.png','floating-islands.png','mapping-editor.png','diagnostics.png'],'clock':'explicit silent diagnostic clock'}
+        report={'scene_switches_verified':a.scene,'exit_code':process.returncode,'pause_stopped_mesh_updates':True,'save_preserved_existing_preset':True,'events':len(re.findall('editor action',evidence)),'distinct_mesh_hashes':len(set(re.findall(r'mesh_hash=(\d+)',evidence))),'screenshots':['noise-lab.png','wave-terrain.png','floating-islands.png','mapping-editor.png','diagnostics.png'],'clock':'explicit silent diagnostic clock'}
         (out/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
         if process.returncode:raise SystemExit('interaction demo failed')
 

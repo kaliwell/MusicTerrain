@@ -3,6 +3,7 @@ use crate::{
     dsp::AudioFeatures,
     preset::VisualizationPreset,
     terrain::{TargetParameter, TerrainField, TerrainParameters},
+    visual::{SceneOptions, SceneStats},
 };
 use horizon_client_render::hud::{HudBatch, rgba};
 
@@ -55,6 +56,9 @@ pub enum Action {
     MappingCurve(usize),
     MappingClamp(usize),
     MusicOverlay,
+    Vegetation,
+    Water,
+    Caves,
 }
 #[derive(Clone)]
 struct Hit {
@@ -89,6 +93,9 @@ pub struct View<'a> {
     pub music_overlay: bool,
     pub effective_parameters: &'a TerrainParameters,
     pub diagnostics: Diagnostics,
+    pub scene_options: SceneOptions,
+    pub scene: &'a SceneStats,
+    pub texture_info: &'a str,
 }
 #[derive(Default)]
 pub struct Diagnostics {
@@ -255,6 +262,9 @@ impl Ui {
                 v.page == p,
             );
         }
+        text(&mut h, 18.0, height - 157.0, "TEXTURE SOURCE", MUTED, 1.0);
+        let texture_label: String = v.texture_info.chars().take(27).collect();
+        text(&mut h, 18.0, height - 139.0, &texture_label, INK, 1.0);
         text(&mut h, 18.0, height - 110.0, "RMB + MOUSE LOOK", MUTED, 1.0);
         text(&mut h, 18.0, height - 91.0, "WASD / Q E FLY", MUTED, 1.0);
         text(
@@ -359,6 +369,7 @@ impl Ui {
                     1.0,
                 );
                 if v.page == Page::Noise {
+                    rect(&mut h, [212.0, 80.0, 80.0, 16.0], 0xee130e0d);
                     text(&mut h, 218.0, 85.0, "NOISE LAB", INK, 1.0);
                     self.button(
                         &mut h,
@@ -662,9 +673,45 @@ impl Ui {
                 }
                 text(&mut h, x, 414.0, "AUDIO OUTPUT: DEFAULT DEVICE", MUTED, 1.0);
                 text(&mut h, x, 437.0, "CAPTURE: NOT IMPLEMENTED", MUTED, 1.0);
+                self.button(
+                    &mut h,
+                    [x, 470.0, sw, 30.0],
+                    if v.scene_options.vegetation {
+                        "TREES / PLANTS ON"
+                    } else {
+                        "TREES / PLANTS OFF"
+                    },
+                    Action::Vegetation,
+                    v.scene_options.vegetation,
+                );
+                self.button(
+                    &mut h,
+                    [x, 509.0, sw, 30.0],
+                    if v.scene_options.water {
+                        "WATER ON"
+                    } else {
+                        "WATER OFF"
+                    },
+                    Action::Water,
+                    v.scene_options.water,
+                );
+                self.button(
+                    &mut h,
+                    [x, 548.0, sw, 30.0],
+                    if v.scene_options.caves {
+                        "CAVES ON"
+                    } else {
+                        "CAVES OFF"
+                    },
+                    Action::Caves,
+                    v.scene_options.caves,
+                );
+                text(&mut h, x, 597.0, "TEXTURES", MUTED, 1.0);
+                let source: String = v.texture_info.chars().take(38).collect();
+                text(&mut h, x, 616.0, &source, INK, 1.0);
             }
             Page::Diagnostics => {
-                for (i, s) in [
+                let lines = [
                     format!("FRAME {:.2} MS", 1000.0 / v.fps.max(0.1)),
                     format!("FPS {:.1}", v.fps),
                     format!("GENERATION {:.2} MS", v.generation_ms),
@@ -689,11 +736,19 @@ impl Ui {
                     format!("CENTROID {:.0} HZ", v.features.centroid),
                     format!("FLUX {:.4}", v.features.flux),
                     format!("SILENCE {}", v.features.silence),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    text(&mut h, x, 160.0 + i as f32 * 28.0, &s, INK, 1.0);
+                    format!("TREES {} - PLANTS {}", v.scene.trees, v.scene.plants),
+                    format!("CAVE FACES {}", v.scene.cave_faces),
+                    format!("WATER QUADS {}", v.scene.water_quads),
+                    format!(
+                        "MATERIAL KINDS {}",
+                        v.scene.material_quads.iter().filter(|n| **n > 0).count()
+                    ),
+                    format!("SOLID VOXELS {}", v.scene.solid_voxels),
+                    format!("CARVED VOXELS {}", v.scene.carved_voxels),
+                ];
+                let spacing = ((height - 200.0) / lines.len() as f32).clamp(16.0, 28.0);
+                for (i, s) in lines.into_iter().enumerate() {
+                    text(&mut h, x, 160.0 + i as f32 * spacing, &s, INK, 1.0);
                 }
             }
             Page::World => {
@@ -739,6 +794,11 @@ impl Ui {
             .chars()
             .take(((right - 225.0) / 6.0).max(1.0) as usize)
             .collect();
+        rect(
+            &mut h,
+            [209.0, 92.0, status.len() as f32 * 6.0 + 12.0, 16.0],
+            0xee130e0d,
+        );
         text(&mut h, 215.0, 96.0, &status, rgba(240, 190, 140, 255), 1.0);
         h
     }

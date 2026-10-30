@@ -1,5 +1,6 @@
 //! The MusicTerrain preview uses Horizon's production section renderer.
-//! All supplied pixels are procedural; this path needs no proprietary game assets.
+//! Textures are original procedural pixels unless a local resource pack is selected.
+use crate::materials::TextureAtlas;
 use glam::{DVec3, Mat4};
 use horizon_client_render::{
     environment::Sky,
@@ -8,23 +9,45 @@ use horizon_client_render::{
     hud::HudBatch,
     weather,
 };
-use std::{error::Error, sync::Arc};
+use std::{error::Error, path::Path, sync::Arc};
 use winit::window::Window;
 
 pub struct PreviewRenderer {
     pub renderer: Renderer,
+    pub texture_info: String,
+    cloud_texture: (u32, u32, Vec<bool>),
 }
 
 impl PreviewRenderer {
     pub fn new(window: Arc<Window>, offscreen: bool) -> Result<Self, Box<dyn Error>> {
-        // A pale stone pattern carries vertex tints without requiring resource packs.
-        let mut pixels = Vec::with_capacity(16 * 16 * 4);
-        for z in 0..16u32 {
-            for x in 0..16u32 {
-                let shade = 216 + ((x * 13 + z * 7 + (x ^ z) * 3) % 32) as u8;
-                pixels.extend_from_slice(&[shade, shade, shade, 255]);
-            }
-        }
+        Self::new_with_resources(window, offscreen, None)
+    }
+
+    pub fn new_with_resources(
+        window: Arc<Window>,
+        offscreen: bool,
+        resources: Option<&Path>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let atlas = TextureAtlas::load(resources)?;
+        let texture_info = if atlas.loaded == 0 {
+            "ORIGINAL MATERIALS: 17".to_owned()
+        } else {
+            format!("LOCAL PACK {}/17 + FALLBACK", atlas.loaded)
+        };
+        let layer_bytes = (atlas.size * atlas.size * 4) as usize;
+        let mips: Vec<_> = atlas
+            .pixels
+            .chunks_exact(layer_bytes)
+            .map(|pixels| horizon_client_render::mipmap::Settings {
+                has_transparent: pixels.as_chunks::<4>().0.iter().any(|pixel| pixel[3] == 0),
+                ..Default::default()
+            })
+            .collect();
+        tracing::info!(
+            loaded_materials = atlas.loaded,
+            material_layers = atlas.layers,
+            "preview material atlas prepared"
+        );
         let white = [255u8; 4];
         let panorama = Faces {
             size: 1,
@@ -33,11 +56,11 @@ impl PreviewRenderer {
         let mut renderer = pollster::block_on(Renderer::new(
             window,
             offscreen,
-            &pixels,
-            16,
-            16,
-            1,
-            &[],
+            &atlas.pixels,
+            atlas.size,
+            atlas.size,
+            atlas.layers,
+            &mips,
             &[],
             (&white, 1, 1),
             (&white, 1, 1),
@@ -51,7 +74,22 @@ impl PreviewRenderer {
         tracing::info!(adapter=%renderer.info.name, backend=?renderer.info.backend, device_type=?renderer.info.device_type, "Horizon preview renderer ready");
         renderer.fullbright = true;
         renderer.animated_textures = false;
-        Ok(Self { renderer })
+        let cloud_texture = (
+            32,
+            32,
+            (0..32)
+                .flat_map(|z| {
+                    (0..32).map(move |x| {
+                        (x / 3 + z / 2) % 5 == 0 || ((x / 4) * 7 + (z / 3) * 3) % 11 < 3
+                    })
+                })
+                .collect(),
+        );
+        Ok(Self {
+            renderer,
+            texture_info,
+            cloud_texture,
+        })
     }
 
     pub fn draw(
@@ -72,12 +110,12 @@ impl PreviewRenderer {
             bob: Mat4::IDENTITY,
             spin: Mat4::IDENTITY,
             sky: Sky {
-                sky_color: [0.035, 0.045, 0.075],
-                fog_color: [0.035, 0.045, 0.075],
+                sky_color: [0.34, 0.60, 0.93],
+                fog_color: [0.65, 0.80, 0.96],
                 sky_light_factor: 1.0,
                 sky_light_color: [1.0; 3],
                 block_light_tint: [1.0; 3],
-                ambient_light_color: [0.1; 3],
+                ambient_light_color: [0.6; 3],
                 fog_start: 192.0,
                 fog_end: 384.0,
                 cloud_fog_end: 384.0,
@@ -89,12 +127,12 @@ impl PreviewRenderer {
             underwater: false,
             cave_culling: false,
             title: false,
-            sky_blocked: true,
-            skybox: false,
+            sky_blocked: false,
+            skybox: true,
             end_sky: false,
             end_sky_sprite: None,
             environment_fog: None,
-            water_fog: [0.035, 0.045, 0.075],
+            water_fog: [0.08, 0.22, 0.38],
             fog: None,
             dark_disc: false,
             outline: Vec::new(),
@@ -113,7 +151,16 @@ impl PreviewRenderer {
             weather: &[],
             weather_time: weather::Time::new(ticks as i64, 0.0),
             dynamic_lights: &[],
-            clouds: None,
+            clouds: Some(horizon_client_render::clouds::Input {
+                texture: &self.cloud_texture,
+                uv: [0.0; 2],
+                camera,
+                time: ticks as i64,
+                partial_tick: 0.0,
+                range: 8,
+                fast: true,
+                color: [1.0, 1.0, 1.0, 0.8],
+            }),
             lightning: Default::default(),
             additive: &[],
             see_through: &[],

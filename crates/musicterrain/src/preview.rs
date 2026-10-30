@@ -8,7 +8,7 @@ use crate::{
     terrain::{GenerationRevision, NoiseType, TerrainParameters, TerrainSnapshot},
     transport::Transport,
     ui::{Action, Diagnostics, Page, RuleField, Ui, View},
-    visual::MeshWorker,
+    visual::{MeshWorker, SceneOptions, SceneStats},
 };
 use glam::DVec3;
 use std::{
@@ -32,6 +32,8 @@ use winit::{
 };
 
 pub struct PreviewOptions {
+    pub resources: Option<PathBuf>,
+    pub scene_options: SceneOptions,
     pub audio_path: Option<PathBuf>,
     pub preset_path: PathBuf,
     pub offscreen: bool,
@@ -43,6 +45,8 @@ pub struct PreviewOptions {
 impl Default for PreviewOptions {
     fn default() -> Self {
         Self {
+            resources: None,
+            scene_options: SceneOptions::default(),
             audio_path: None,
             preset_path: PathBuf::from("musicterrain-preset.json"),
             offscreen: false,
@@ -188,6 +192,7 @@ struct App {
     report_frames: u64,
     report_sum_ms: f64,
     report_max_ms: f64,
+    scene: SceneStats,
 }
 impl App {
     fn new(options: PreviewOptions) -> Result<Self, Box<dyn Error>> {
@@ -243,6 +248,7 @@ impl App {
             report_frames: 0,
             report_sum_ms: 0.,
             report_max_ms: 0.,
+            scene: SceneStats::default(),
         })
     }
     fn position(&self) -> f64 {
@@ -512,6 +518,21 @@ impl App {
                 self.revision.0 += 1;
                 self.dirty = true;
             }
+            Action::Vegetation => {
+                self.options.scene_options.vegetation = !self.options.scene_options.vegetation;
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
+            Action::Water => {
+                self.options.scene_options.water = !self.options.scene_options.water;
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
+            Action::Caves => {
+                self.options.scene_options.caves = !self.options.scene_options.caves;
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
         }
     }
     fn redraw(&mut self, event_loop: &ActiveEventLoop) {
@@ -622,7 +643,11 @@ impl App {
                 parameters: parameters.clone(),
                 audio_time,
             };
-            if self.worker.submit(snapshot, self.options.size) {
+            if self.worker.submit_with_options(
+                snapshot,
+                self.options.size,
+                self.options.scene_options,
+            ) {
                 self.last_submit = now;
                 self.last_audio = audio_time;
                 self.last_parameters = Some(parameters.clone());
@@ -633,6 +658,7 @@ impl App {
             self.generation_ms = result.generation_ms;
             self.meshes += 1;
             self.last_mesh_audio = result.audio_time;
+            self.scene = result.scene;
             let hash = result.checksum;
             if self.loaded.is_some()
                 && self.mesh_hashes.last() != Some(&hash)
@@ -656,6 +682,11 @@ impl App {
                 audio_time = self.last_mesh_audio,
                 generation_ms = self.generation_ms,
                 revision = self.revision.0,
+                trees = self.scene.trees,
+                plants = self.scene.plants,
+                cave_faces = self.scene.cave_faces,
+                water_quads = self.scene.water_quads,
+                material_kinds = self.scene.material_quads.iter().filter(|n| **n > 0).count(),
                 "preview mesh uploaded"
             );
         }
@@ -739,6 +770,12 @@ impl App {
                 },
                 music_overlay: self.music_overlay,
                 effective_parameters: &parameters,
+                scene_options: self.options.scene_options,
+                scene: &self.scene,
+                texture_info: self
+                    .renderer
+                    .as_ref()
+                    .map_or("TEXTURES INITIALIZING", |r| r.texture_info.as_str()),
             },
         );
         let ready = self.meshes >= 2 && self.mesh_hashes.len() >= 2;
@@ -794,9 +831,10 @@ impl ApplicationHandler for App {
                         .with_min_inner_size(winit::dpi::LogicalSize::new(1000., 650.)),
                 )?,
             );
-            self.renderer = Some(PreviewRenderer::new(
+            self.renderer = Some(PreviewRenderer::new_with_resources(
                 window.clone(),
                 self.options.offscreen,
+                self.options.resources.as_deref(),
             )?);
             self.window = Some(window);
             Ok(())

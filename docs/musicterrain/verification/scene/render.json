@@ -1,0 +1,357 @@
+{
+  "scene_samples": [
+    {
+      "trees": 3,
+      "plants": 84,
+      "cave_faces": 3026,
+      "water_quads": 266,
+      "material_kinds": 16
+    },
+    {
+      "trees": 10,
+      "plants": 79,
+      "cave_faces": 3084,
+      "water_quads": 247,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2941,
+      "water_quads": 255,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2920,
+      "water_quads": 248,
+      "material_kinds": 16
+    },
+    {
+      "trees": 6,
+      "plants": 81,
+      "cave_faces": 3244,
+      "water_quads": 340,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 78,
+      "cave_faces": 2984,
+      "water_quads": 277,
+      "material_kinds": 16
+    },
+    {
+      "trees": 12,
+      "plants": 77,
+      "cave_faces": 2866,
+      "water_quads": 244,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2883,
+      "water_quads": 239,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2897,
+      "water_quads": 232,
+      "material_kinds": 16
+    },
+    {
+      "trees": 4,
+      "plants": 81,
+      "cave_faces": 3129,
+      "water_quads": 234,
+      "material_kinds": 16
+    },
+    {
+      "trees": 8,
+      "plants": 79,
+      "cave_faces": 3073,
+      "water_quads": 235,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 3044,
+      "water_quads": 230,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2966,
+      "water_quads": 228,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2954,
+      "water_quads": 233,
+      "material_kinds": 16
+    },
+    {
+      "trees": 4,
+      "plants": 84,
+      "cave_faces": 3248,
+      "water_quads": 304,
+      "material_kinds": 16
+    },
+    {
+      "trees": 9,
+      "plants": 80,
+      "cave_faces": 3102,
+      "water_quads": 296,
+      "material_kinds": 16
+    },
+    {
+      "trees": 10,
+      "plants": 78,
+      "cave_faces": 2994,
+      "water_quads": 273,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2906,
+      "water_quads": 251,
+      "material_kinds": 16
+    },
+    {
+      "trees": 3,
+      "plants": 79,
+      "cave_faces": 2845,
+      "water_quads": 394,
+      "material_kinds": 16
+    },
+    {
+      "trees": 8,
+      "plants": 79,
+      "cave_faces": 2935,
+      "water_quads": 266,
+      "material_kinds": 16
+    },
+    {
+      "trees": 10,
+      "plants": 77,
+      "cave_faces": 2949,
+      "water_quads": 238,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2976,
+      "water_quads": 237,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2925,
+      "water_quads": 238,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2933,
+      "water_quads": 238,
+      "material_kinds": 16
+    },
+    {
+      "trees": 6,
+      "plants": 80,
+      "cave_faces": 3242,
+      "water_quads": 238,
+      "material_kinds": 16
+    },
+    {
+      "trees": 9,
+      "plants": 80,
+      "cave_faces": 3134,
+      "water_quads": 234,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 3006,
+      "water_quads": 251,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2965,
+      "water_quads": 247,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2947,
+      "water_quads": 241,
+      "material_kinds": 16
+    },
+    {
+      "trees": 6,
+      "plants": 80,
+      "cave_faces": 3270,
+      "water_quads": 339,
+      "material_kinds": 16
+    },
+    {
+      "trees": 12,
+      "plants": 77,
+      "cave_faces": 2922,
+      "water_quads": 253,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2879,
+      "water_quads": 239,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2878,
+      "water_quads": 239,
+      "material_kinds": 16
+    },
+    {
+      "trees": 4,
+      "plants": 77,
+      "cave_faces": 2868,
+      "water_quads": 243,
+      "material_kinds": 16
+    },
+    {
+      "trees": 5,
+      "plants": 82,
+      "cave_faces": 3087,
+      "water_quads": 239,
+      "material_kinds": 16
+    },
+    {
+      "trees": 9,
+      "plants": 78,
+      "cave_faces": 3099,
+      "water_quads": 235,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 3064,
+      "water_quads": 230,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2971,
+      "water_quads": 234,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2956,
+      "water_quads": 232,
+      "material_kinds": 16
+    },
+    {
+      "trees": 4,
+      "plants": 84,
+      "cave_faces": 3217,
+      "water_quads": 311,
+      "material_kinds": 16
+    },
+    {
+      "trees": 10,
+      "plants": 78,
+      "cave_faces": 3102,
+      "water_quads": 295,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2942,
+      "water_quads": 260,
+      "material_kinds": 16
+    },
+    {
+      "trees": 11,
+      "plants": 77,
+      "cave_faces": 2872,
+      "water_quads": 235,
+      "material_kinds": 16
+    }
+  ],
+  "performance_samples": [
+    {
+      "frame_ms_mean": 61.29624288235294,
+      "frame_ms_max": 183.761171,
+      "fps": 16.31421361206949,
+      "queued_jobs": 0.0,
+      "generation_ms": 32.62764358520508,
+      "upload_ms": 0.8563069701194763
+    },
+    {
+      "frame_ms_mean": 49.31043628571429,
+      "frame_ms_max": 105.166917,
+      "fps": 20.27968266607509,
+      "queued_jobs": 0.0,
+      "generation_ms": 38.360191345214844,
+      "upload_ms": 0.9618690013885498
+    },
+    {
+      "frame_ms_mean": 44.88690578260871,
+      "frame_ms_max": 96.66937300000001,
+      "fps": 22.27821193207412,
+      "queued_jobs": 0.0,
+      "generation_ms": 58.213199615478516,
+      "upload_ms": 0.7043579816818237
+    },
+    {
+      "frame_ms_mean": 47.549165090909085,
+      "frame_ms_max": 111.198326,
+      "fps": 21.03086348809918,
+      "queued_jobs": 0.0,
+      "generation_ms": 80.80843353271484,
+      "upload_ms": 2.4346790313720703
+    }
+  ],
+  "exit_code": 0,
+  "wall_seconds": 6.0736651550000715,
+  "peak_rss_kib_sampled": 201964,
+  "distinct_mesh_hashes": 43,
+  "mesh_updates": 43,
+  "mesh_mean_ms": 55.44587148622025,
+  "mesh_max_ms": 95.36809539794922,
+  "extent": 64,
+  "resolution": [
+    1280,
+    800
+  ],
+  "audio": "synthesized12s",
+  "clock": "explicit silent software clock",
+  "graphics": "software Vulkan requested",
+  "build_binary": "/workspace/horizon/target/debug/musicterrain",
+  "screenshot": "preview.png",
+  "completion_log": "frames=91 meshes=43 distinct_meshes=32 elapsed=6.002266537"
+}

@@ -1,0 +1,13 @@
+   Compiling musicterrain v0.1.0 (/workspace/horizon/crates/musicterrain)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.28s
+     Running tests/scene_mesh.rs (target/debug/deps/scene_mesh-f9953aaece673fca)
+
+running 5 tests
+test density_islands_keep_real_topology_and_materials ... ok
+scene64 64.51ms vertices=95112 sections=46 stats=SceneStats { trees: 10, plants: 76, cave_faces: 3215, water_quads: 266, material_quads: [3802, 4780, 1668, 10075, 412, 266, 198, 10, 1411, 212, 36, 56, 0, 240, 206, 266, 140], solid_voxels: 135328, carved_voxels: 2675 }
+test default_bass_scene_contains_real_materials_trees_flowers_caves_and_water ... ok
+test scene_options_participate_in_snapshot_cache_identity ... ok
+test textured_scene_is_deterministic_and_all_quads_stay_section_local ... ok
+test independent_scene_switches_remove_their_actual_geometry ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s

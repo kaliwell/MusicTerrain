@@ -105,3 +105,27 @@ peak RSS 201.2 MiB. Targeted dev optimization reduced CPU work; the baseline and
 later runs used different load/thread conditions, so no controlled speedup ratio
 is claimed. These short runs do not establish absence of leaks, 60 FPS, hardware
 latency or Windows behavior. The 256² stall remains an optimization issue.
+
+## Textured scene measurement — 2026-10-30 UTC
+
+The scene update was measured separately with the same CPU software Vulkan,
+1280×800, 64² extent, two-CPU quota and `LP_NUM_THREADS=2`. No Cargo compilation
+ran alongside this final smoke. Source: [scene/render.json](verification/scene/render.json).
+
+- 91 frames, 43 distinct complete scene meshes; whole run 6.07 s including startup/readback.
+- Actual mesh-upload records: mean 55.45 ms, max 95.37 ms.
+- One-second frame means 44.9–61.3 ms; FPS 16.3–22.3; largest interval 183.8 ms.
+- Sampled peak RSS 197.2 MiB. Pending jobs were 0 in the sampled performance records;
+ structural queue limits remain one pending, one result and one active worker.
+- The unmodulated test snapshot contains 95,112 vertices in 46 sections. It emitted
+ 10 trees, 76 plants and multiple actual material/cave/water faces; these are actual
+ counts, not terrain-object placeholders.
+
+The material-volume pass now skips air above each column before meshing.
+Material faces are split to the fixed-point UV range so textures tile at block
+scale; this produces more real geometry than the earlier pale heightfield.
+An initial smoke overlapped Clippy and recorded 4.6–21.1 FPS and a 355 ms mesh maximum;
+that run is not used as the isolated measurement above. Keep hardware claims
+separate: RTX 3060 / 1080p 60 FPS and physical audio latency are still unverified.
+The smoke parser now computes mesh means from actual upload records only,
+rather than also counting repeated performance-status samples.

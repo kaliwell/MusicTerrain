@@ -30,3 +30,13 @@
 - Measured Linux software-Vulkan 64² windows ranged from about 15–33 FPS in short
   repeated runs. The 256² experiment had a 3.06 s stall. Keep 64² as the demo default;
   the larger extents need further upload/render work and target-GPU measurement.
+
+- The textured scene uses original pixel art by default. Optional local PNGs do
+  not include Minecraft resources with the repository. Texture animation uses
+  the first square frame; ZIP packs, custom block models and mcmeta frame grids
+  are not supported yet.
+- Trees, ponds and carved preview tunnels are real mesh geometry, but their
+  material volume is temporary. They have no collision, fluid simulation or
+  persistence. The deterministic heightmap CLI remains the core-field export.
+- Preview scene switches currently belong to the session/CLI, not the existing
+  visualization-preset JSON schema. Full snapshot export is future work.

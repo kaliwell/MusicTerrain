@@ -24,3 +24,14 @@
   Saved screenshots and raw evidence under images/ and verification/.
 - Documented measured 64² software-GPU limits and severe 256² stalls without
   claiming hardware 60 FPS, physical audio or complete Music World export.
+
+### Textured scene update — 2026-10-30 UTC
+
+- Replaced the shared pale stone layer with 17 original pixel-art materials and
+  optional local resource-directory PNG loading, including grass-side overlay.
+- Added seeded ecology, actual oak/leaf blocks, cutout flowers/grass, ponds,
+  sand/snow surfaces, deep ore materials and carved preview cave networks.
+- Added sky/clouds, material-source indicators, real scene counts and independent
+  geometry switches. No persistent-world or physical-fluid claim.
+- Verified 60 native tests, 40 headless tests, fmt/clippy/build, actual renderer
+  readback, local-PNG rendering and real GUI switches. Evidence: verification/scene/.

@@ -1,7 +1,7 @@
 #![cfg(feature = "native")]
 use musicterrain::{
     terrain::{GenerationRevision, TerrainParameters, TerrainSnapshot},
-    visual::{MeshWorker, mesh_snapshot},
+    visual::{MeshWorker, SceneOptions, mesh_snapshot, mesh_snapshot_with_options},
 };
 use std::time::{Duration, Instant};
 fn snapshot(revision: u64) -> TerrainSnapshot {
@@ -141,8 +141,17 @@ fn flat_surface_has_only_exterior_faces_and_correct_winding() {
     request.parameters.amplitude = 0.;
     request.parameters.detail = 0.;
     request.parameters.base_height = 16.;
-    let flat = mesh_snapshot(&request, 16).unwrap();
-    assert_eq!(flat.vertices, (16 * 16 * 2 + 16 * 4) * 4);
+    let flat = mesh_snapshot_with_options(
+        &request,
+        16,
+        &SceneOptions {
+            vegetation: false,
+            water: false,
+            caves: false,
+        },
+    )
+    .unwrap();
+    let mut exterior_area = 0.0;
     for ((cx, sy, cz), section) in flat.sections {
         let origin = [cx * 16, -64 + sy * 16, cz * 16];
         for quad in section.solid.as_chunks::<4>().0 {
@@ -158,6 +167,7 @@ fn flat_surface_has_only_exterior_faces_and_correct_winding() {
                 a[0] * b[1] - a[1] * b[0],
             ];
             let axis = normal.iter().position(|v| *v != 0.).unwrap();
+            exterior_area += normal[axis].abs();
             let expected = if axis == 1 {
                 if p[0][axis] == 16. { 1. } else { -1. }
             } else if p[0][axis] == 8. {
@@ -171,6 +181,7 @@ fn flat_surface_has_only_exterior_faces_and_correct_winding() {
                 && (0.0..=16.0).contains(&v[1])));
         }
     }
+    assert_eq!(exterior_area, 6.0 * 16.0 * 16.0);
 }
 
 #[test]

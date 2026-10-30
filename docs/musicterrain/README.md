@@ -4,8 +4,8 @@ Opt-in Rust music terrain editor built in the actual Horizon Cargo workspace.
 It reuses Horizon's seeded Perlin/Simplex noise, section vertex format, production
 wgpu renderer, GPU arenas, camera math and HUD. Vanilla gameplay and saves are untouched.
 
-[Actual demo screenshot](images/demo.png) · [Noise Lab](images/noise-lab.png) ·
-[Floating Islands](images/floating-islands.png)
+[Textured world screenshot](images/scene.png) · [Noise Lab](images/scene-noise-lab.png) ·
+[Floating Islands](images/scene-islands.png)
 
 ## Run the demo
 
@@ -54,6 +54,35 @@ animation without sound, use `--silent-preview` (labeled software clock):
 ```sh
 cargo run -p musicterrain -- demo --silent-preview
 ```
+
+
+## Textured world preview
+
+The default preview now includes grass/dirt/stone layers, oak trees, cutout grass
+and flowers, sand banks, translucent pond water, coal/iron ore, gravel/clay and
+actual carved cave entrances/walls. Alpine terrain uses snow. Daylight sky and
+block clouds use Horizon's existing renderer. All 17 built-in texture layers are
+original generated pixel art; no Minecraft texture is bundled or downloaded.
+
+Trees/Plants, Water and Caves are independent controls on Settings. They rebuild
+the actual geometry and invalidate old-generation results. Equivalent CLI flags:
+
+```sh
+cargo run -p musicterrain -- demo --no-vegetation --no-water --no-caves
+cargo run -p musicterrain -- demo --resources /path/to/resource-pack
+```
+
+Resource directories can be a pack/prepared root containing
+`assets/minecraft/textures/block`, a `textures` root or the `block` directory.
+Known missing PNGs retain original fallback textures; corrupt files produce an
+error. The UI shows how many layers came from the local pack. Only the first
+square animation frame is currently used. ZIP import/custom models are not
+implemented. See [MATERIALS](MATERIALS.md), [ECOLOGY](ECOLOGY.md) and
+[SCENE_GENERATION](SCENE_GENERATION.md) for the actual data path and limits.
+
+The preview is a finite visual scene; it does not yet add gameplay collisions,
+fluid simulation or a Minecraft save. The analysis CLI exports the original
+core height field; its files do not contain these preview decorations.
 
 ## Deterministic analysis and heightmaps
 
@@ -107,11 +136,11 @@ export LD_LIBRARY_PATH=/workspace/scratch/sysroot/usr/lib/x86_64-linux-gnu
 cargo build -p musicterrain
 ```
 
-For this session's Xvfb display `:99`:
+For this session's Xvfb display `:100`:
 
 ```sh
-DISPLAY=:99 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/new-evidence --frames 120
-DISPLAY=:99 LP_NUM_THREADS=2 python3 tools/musicterrain_interaction.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/new-interaction-evidence
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/new-evidence --frames 120
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_interaction.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/new-interaction-evidence
 ```
 
 These developer harnesses create fresh data homes and set `HORIZON_NO_AUDIO=1`,
@@ -120,14 +149,14 @@ physical sound device. Evidence directories must be new. If the environment has
 restarted, first start the extracted display server in another terminal:
 
 ```sh
-LD_LIBRARY_PATH=/workspace/scratch/sysroot/usr/lib/x86_64-linux-gnu /workspace/scratch/sysroot/usr/bin/Xvfb :99 -screen 0 1280x800x24 -nolisten tcp -ac
+LD_LIBRARY_PATH=/workspace/scratch/sysroot/usr/lib/x86_64-linux-gnu /workspace/scratch/sysroot/usr/bin/Xvfb :100 -screen 0 1280x800x24 -nolisten tcp -ac
 ```
 
 To leave the interactive native demo open in this provisioned cloud display,
 using the compiled executable (no Cargo invocation):
 
 ```sh
-DISPLAY=:99 XDG_RUNTIME_DIR=/workspace/scratch/runtime LP_NUM_THREADS=2 LD_LIBRARY_PATH=/workspace/scratch/sysroot/usr/lib/x86_64-linux-gnu VK_DRIVER_FILES=/workspace/scratch/sysroot/usr/share/vulkan/icd.d/lvp_icd.json ./target/debug/musicterrain demo --silent-preview
+DISPLAY=:100 XDG_RUNTIME_DIR=/workspace/scratch/runtime LP_NUM_THREADS=2 LD_LIBRARY_PATH=/workspace/scratch/sysroot/usr/lib/x86_64-linux-gnu VK_DRIVER_FILES=/workspace/scratch/sysroot/usr/share/vulkan/icd.d/lvp_icd.json ./target/debug/musicterrain demo --silent-preview
 ```
 
 The window is on Xvfb, so it is not a physical desktop display. On a local desktop,

@@ -174,3 +174,20 @@ recording actual compile/runtime results separately in `TEST_REPORT.md` and
 `PERFORMANCE.md`. Installing a toolchain is not evidence that the preview ran.
 JDK/vanilla differential harnesses, hardware-GPU and Windows loopback checks
 remain distinct from portable DSP/terrain tests.
+
+## Textured preview adaptation (2026-10-30)
+
+`musicterrain/src/materials.rs` now uses Horizon's `hud::decode_bytes` and its
+mipmap/upload path to construct a 17-layer array with optional local resource
+PNG overrides. `renderer.rs` feeds that atlas into the same `Renderer::new`;
+`Frame` enables the existing daylight sky and cloud pass. No renderer fork or
+second event loop was introduced.
+
+`horizon-world/src/worldgen/tree.rs` and `vegetation.rs` were inspected: their
+real feature execution binds registry block states, prepared JSON definitions,
+world queries and placement contexts. They cannot be instantiated faithfully
+without those resources. The resource-free preview therefore uses its own
+bounded `ecology.rs` adapter for seeded anchors/cave intervals and Horizon core
+Simplex for climate. It emits Horizon section vertices for original simplified
+oak/plant geometry. This is not claimed to reproduce vanilla tree/biome parity.
+Material volumes remain isolated from the vanilla streamer, blocks and saves.

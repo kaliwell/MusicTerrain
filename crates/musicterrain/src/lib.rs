@@ -2,7 +2,10 @@
 pub mod audio;
 pub mod diagnostics;
 pub mod dsp;
+pub mod ecology;
 pub mod mapping;
+#[cfg(feature = "native")]
+pub mod materials;
 pub mod preset;
 #[cfg(feature = "native")]
 pub mod preview;

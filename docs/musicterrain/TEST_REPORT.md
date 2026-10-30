@@ -111,3 +111,50 @@ successful acceptance run.
   above passed; unavailable prepared resources are not counted as passing tests.
 - Long-duration leak testing or 1080p 60 FPS. Software Vulkan measurements have
   their own explicit limits in PERFORMANCE.md.
+
+## Textured scene update — 2026-10-30 UTC
+
+The scene update adds 17 original pixel-art material layers, local PNG loading,
+seeded ecology, grass/dirt/stone/sand/snow surfaces, real oak trunk/leaf blocks,
+cutout grass/flowers, pond water, ore materials and actual carved cave voxels.
+The production Horizon terrain, translucency, sky and cloud pipelines remain in use.
+
+Final checks for this revision:
+
+| Check | Result |
+| --- | --- |
+| `cargo test -p musicterrain` | 60 passed, none ignored |
+| `cargo test -p musicterrain --no-default-features` | 40 passed |
+| `cargo clippy -p musicterrain --all-targets -- -D warnings` | Passed |
+| `cargo fmt --all --check` | Passed |
+| `cargo build -p musicterrain` | Passed |
+| Real renderer smoke with `--require-scene` | Exit 0; 91 frames, 43 distinct uploaded meshes, PNG readback |
+| X11 interaction with `--scene` | Exit 0; 22 events; actual geometry switches, pause/seek/history/save/load verified |
+| Local resource directory render | Exit 0; actual one local PNG layer + 16 fallback layers, screenshot generated |
+
+The 18 added tests consist of seven ecology, six material and five scene-mesh
+tests. The original flat-mesh test still verifies complete exterior area and
+outward winding; material boundaries legitimately subdivide faces. No prior
+coverage was removed. At the exact default unmodulated snapshot, the new scene
+contains 10 trees, 76 plants, 2675 carved cells, 3215 cave quads and 266 water quads;
+counts change with the playing music and are logged from actual generation.
+
+Scene tests assert real material-layer use, translucent water batches, cutout
+alpha, bounded section-local positions/UVs, foliage/trunk geometry, valid terrain
+support, deterministic world-grid identities, matching tiled decoration queries,
+carved voids, scene-switch cache identity and preserved 3D density topology.
+An early ecology test caught mirrored-position event-ID collisions; the keyed
+coordinate packing was corrected and all seven ecology tests then passed.
+Rust 1.99 Clippy slice/checked-division warnings were fixed before final checking.
+The first renderer attempt found a stale Xvfb socket; restarting on fresh display
+`:100` resolved that environmental failure.
+
+Raw evidence is in [verification/scene](verification/scene/). Actual screenshots:
+[textured scene](images/scene.png), [scene settings](images/scene-settings.png),
+[disabled geometry](images/scene-disabled.png), [Noise Lab](images/scene-noise-lab.png)
+and [islands](images/scene-islands.png).
+
+These checks use the explicit silent diagnostic clock and CPU software Vulkan.
+They do not establish audible hardware output or target-GPU/Windows performance.
+Material volumes/decorations remain preview-only; the heightmap analysis export
+is unchanged and no Minecraft world persistence/collision/fluid simulation is claimed.
