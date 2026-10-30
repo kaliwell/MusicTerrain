@@ -52,10 +52,28 @@ pub enum Material {
     JungleLeaves = 33,
     Vine = 34,
     Fern = 35,
+    Bamboo = 36,
+    Melon = 37,
+    Pumpkin = 38,
+    Cocoa = 39,
+    RedMushroom = 40,
+    BrownMushroom = 41,
+    Sunflower = 42,
+    SugarCane = 43,
+    OakPlanks = 44,
+    Cobblestone = 45,
+    RoofTiles = 46,
+    Glass = 47,
+    Farmland = 48,
+    Wheat = 49,
+    HayBale = 50,
+    Path = 51,
+    Sandstone = 52,
+    SprucePlanks = 53,
 }
 
 impl Material {
-    pub const ALL: [Self; 36] = [
+    pub const ALL: [Self; 54] = [
         Self::GrassTop,
         Self::GrassSide,
         Self::Dirt,
@@ -92,6 +110,24 @@ impl Material {
         Self::JungleLeaves,
         Self::Vine,
         Self::Fern,
+        Self::Bamboo,
+        Self::Melon,
+        Self::Pumpkin,
+        Self::Cocoa,
+        Self::RedMushroom,
+        Self::BrownMushroom,
+        Self::Sunflower,
+        Self::SugarCane,
+        Self::OakPlanks,
+        Self::Cobblestone,
+        Self::RoofTiles,
+        Self::Glass,
+        Self::Farmland,
+        Self::Wheat,
+        Self::HayBale,
+        Self::Path,
+        Self::Sandstone,
+        Self::SprucePlanks,
     ];
 
     pub const fn layer(self) -> u16 {
@@ -109,6 +145,8 @@ impl Material {
             Self::AcaciaLeaves => [160, 168, 65],
             Self::JungleLeaves | Self::Vine => [62, 145, 49],
             Self::Fern => [74, 160, 55],
+            Self::Bamboo => [108, 162, 55],
+            Self::SugarCane => [131, 184, 82],
             Self::Water => [78, 145, 225],
             _ => [255; 3],
         }
@@ -166,6 +204,24 @@ impl Material {
             Self::JungleLeaves => &["jungle_leaves.png"],
             Self::Vine => &["vine.png"],
             Self::Fern => &["fern.png"],
+            Self::Bamboo => &["bamboo_stalk.png"],
+            Self::Melon => &["melon_side.png"],
+            Self::Pumpkin => &["pumpkin_side.png"],
+            Self::Cocoa => &["cocoa_stage2.png"],
+            Self::RedMushroom => &["red_mushroom.png"],
+            Self::BrownMushroom => &["brown_mushroom.png"],
+            Self::Sunflower => &["sunflower_front.png"],
+            Self::SugarCane => &["sugar_cane.png"],
+            Self::OakPlanks => &["oak_planks.png"],
+            Self::Cobblestone => &["cobblestone.png"],
+            Self::RoofTiles => &["bricks.png"],
+            Self::Glass => &["glass.png"],
+            Self::Farmland => &["farmland.png"],
+            Self::Wheat => &["wheat_stage7.png"],
+            Self::HayBale => &["hay_block_side.png"],
+            Self::Path => &["dirt_path_top.png"],
+            Self::Sandstone => &["sandstone.png"],
+            Self::SprucePlanks => &["spruce_planks.png"],
         }
     }
 }
@@ -442,7 +498,15 @@ fn procedural(material: Material) -> Vec<u8> {
                 | Material::JungleLeaves => color(
                     [190; 3],
                     shade + (hash(x / 3, y / 3, 9) % 43) as i32 - 21,
-                    if grain.is_multiple_of(7) { 0 } else { 255 },
+                    if grain.is_multiple_of(if material == Material::JungleLeaves {
+                        17
+                    } else {
+                        7
+                    }) {
+                        0
+                    } else {
+                        255
+                    },
                 ),
                 Material::TallGrass => {
                     let blade = y > 2 + hash(x / 3, 0, 11) % 8
@@ -543,6 +607,145 @@ fn procedural(material: Material) -> Vec<u8> {
                         || (3..14).contains(&x) && (y == 7 + x / 3 || y == 15 - x / 2);
                     color([135, 98, 52], shade, if stem { 255 } else { 0 })
                 }
+                Material::Bamboo => {
+                    let stalk = (6..=9).contains(&x);
+                    let branch =
+                        (y == 4 && (3..=12).contains(&x)) || (y == 11 && (5..=14).contains(&x));
+                    color(
+                        [213; 3],
+                        shade / 2 - if y.is_multiple_of(7) { 35 } else { 0 },
+                        if stalk || branch { 255 } else { 0 },
+                    )
+                }
+                Material::Melon => color(
+                    [102, 149, 45],
+                    shade / 2 - if x % 4 < 2 { 28 } else { 0 },
+                    255,
+                ),
+                Material::Pumpkin => color(
+                    [215, 130, 36],
+                    shade / 2 - if x % 5 == 0 { 40 } else { 0 },
+                    255,
+                ),
+                Material::Cocoa => color(
+                    [126, 71, 36],
+                    shade / 2 - if x % 4 == 0 || y % 7 == 0 { 20 } else { 0 },
+                    255,
+                ),
+                Material::RedMushroom | Material::BrownMushroom => {
+                    let dx = (x as i32 - 8).abs();
+                    if (4..=8).contains(&y) && dx <= (y as i32 - 2).min(6) {
+                        let rgb = if material == Material::RedMushroom {
+                            if (x + y * 3) % 7 < 2 {
+                                [237, 219, 190]
+                            } else {
+                                [181, 43, 35]
+                            }
+                        } else {
+                            [139, 101, 69]
+                        };
+                        color(rgb, shade / 2, 255)
+                    } else if (9..=14).contains(&y) && (7..=9).contains(&x) {
+                        color([211, 188, 151], shade / 3, 255)
+                    } else {
+                        [0; 4]
+                    }
+                }
+                Material::Sunflower => {
+                    let dx = (x as i32 - 8).abs();
+                    let dy = (y as i32 - 5).abs();
+                    if dx * dx + dy * dy <= 20 {
+                        color(
+                            if dx * dx + dy * dy <= 5 {
+                                [100, 67, 32]
+                            } else {
+                                [243, 192, 43]
+                            },
+                            shade / 3,
+                            255,
+                        )
+                    } else if x == 8 && y >= 9 || (y == 12 && (4..=8).contains(&x)) {
+                        color([64, 123, 37], shade / 2, 255)
+                    } else {
+                        [0; 4]
+                    }
+                }
+                Material::SugarCane => {
+                    let stalk = x % 5 == 2 || (y % 6 == 2 && (x + y / 3) % 5 < 3);
+                    color(
+                        [211; 3],
+                        shade / 2 - if y.is_multiple_of(6) { 27 } else { 0 },
+                        if stalk { 255 } else { 0 },
+                    )
+                }
+                Material::OakPlanks | Material::SprucePlanks => {
+                    let rgb = if material == Material::OakPlanks {
+                        [174, 137, 83]
+                    } else {
+                        [107, 80, 47]
+                    };
+                    let seam = y.is_multiple_of(4) || (x + (y / 4 % 2) * 7).is_multiple_of(15);
+                    color(rgb, shade / 3 - if seam { 37 } else { 0 }, 255)
+                }
+                Material::Cobblestone => {
+                    let stagger = y / 5 % 2 * 3;
+                    let seam = y % 5 == 0 || (x + stagger) % 6 == 0;
+                    color([119, 122, 116], shade / 2 - if seam { 42 } else { 0 }, 255)
+                }
+                Material::RoofTiles => {
+                    let seam = y.is_multiple_of(4) || (x + y / 4 % 2 * 4).is_multiple_of(8);
+                    color([151, 75, 51], shade / 3 - if seam { 40 } else { 0 }, 255)
+                }
+                Material::Glass => {
+                    let frame = x == 0 || y == 0 || x == 15 || y == 15;
+                    let glint = (x + y == 13 || x + y == 19) && x > 2 && x < 12 && y > 2 && y < 12;
+                    color(
+                        [189, 221, 228],
+                        shade / 4,
+                        if frame || glint { 255 } else { 0 },
+                    )
+                }
+                Material::Farmland => color(
+                    [96, 63, 36],
+                    shade / 2 - if x % 4 == 0 { 29 } else { 0 },
+                    255,
+                ),
+                Material::Wheat => {
+                    let stalk = x % 4 == 1 && y >= 5;
+                    let head = y > 1 && y < 8 && (x + y % 2) % 4 < 2;
+                    color(
+                        if y < 8 {
+                            [208, 175, 65]
+                        } else {
+                            [119, 139, 46]
+                        },
+                        shade / 2,
+                        if stalk || head { 255 } else { 0 },
+                    )
+                }
+                Material::HayBale => {
+                    let strap = y == 3 || y == 4 || y == 11 || y == 12;
+                    color(
+                        if strap { [150, 88, 37] } else { [188, 161, 53] },
+                        shade / 2 - if x % 3 == 0 { 17 } else { 0 },
+                        255,
+                    )
+                }
+                Material::Path => color(
+                    [149, 123, 79],
+                    shade / 2 - if grain.is_multiple_of(11) { 19 } else { 0 },
+                    255,
+                ),
+                Material::Sandstone => color(
+                    [207, 192, 143],
+                    shade / 3
+                        - if y.is_multiple_of(8) || (x + y / 8 * 5).is_multiple_of(13) {
+                            18
+                        } else {
+                            0
+                        },
+                    255,
+                ),
                 Material::Snow => color([239, 245, 249], shade / 3, 255),
                 Material::CoalOre | Material::IronOre => {
                     let ore = hash(x / 3, y / 3, 17) % 9 < 2 && (x + y) % 3 != 0;

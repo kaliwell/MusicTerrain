@@ -55,3 +55,18 @@
   36 layers total, previous material IDs preserved.
 - Extended tile/species/material/alpha and all-biome UI checks; added jungle
   density/height and vegetation-switch tests. No climbing or world-save claim.
+
+### Rich biome details and villages — 2026-10-30 UTC
+
+- Added mixed-size jungle trees, irregular rounded crowns, understory bushes,
+  bamboo patches, melons, attached cocoa and two-block sunflowers; differentiated
+  forest/taiga/swamp/meadow plants with mushrooms, pumpkins and bank-only cane.
+- Expanded tree halo to five, shrub/bamboo halos to two/one; retained seeded
+  layout, clipping, cancellation and bounded requests.
+- Appended 18 original plant/building/farm material layers (54 total), preserving
+  old IDs and cutout policies.
+- Added original biome-styled village plans with hollow houses, open doors,
+  windows, roofs, foundations, roads, a well and irrigated farms/hay details.
+  Auto / Showcase / Off is real UI/CLI state and part of cache identity.
+- Added real village/tile/switch/structure tests and native UI/render evidence.
+  No ordinary Horizon gameplay/save modifications or vanilla-template claim.

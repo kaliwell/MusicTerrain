@@ -359,3 +359,38 @@ fn jungle_vegetation_switch_removes_trunks_canopies_ferns_and_vines() {
                 .all(|c| c.is_finite() && (0.0..=16.0).contains(c)))
     );
 }
+
+#[test]
+fn rich_jungle_mesh_contains_bamboo_melons_cocoa_and_fern_layers() {
+    use musicterrain::{ecology::SceneBiome, village::VillageMode};
+    let mut snapshot = scene();
+    snapshot.parameters.amplitude = 0.;
+    snapshot.parameters.detail = 0.;
+    snapshot.parameters.base_height = 25.;
+    let options = SceneOptions {
+        biome: Some(SceneBiome::Jungle),
+        villages: VillageMode::Off,
+        water: false,
+        ..SceneOptions::default()
+    };
+    let mesh = mesh_snapshot_with_options(&snapshot, 128, &options).unwrap();
+    for material in [
+        Material::Bamboo,
+        Material::Melon,
+        Material::Cocoa,
+        Material::Fern,
+        Material::JungleLeaves,
+    ] {
+        assert!(
+            mesh.scene.material_quads[material.layer() as usize] > 0,
+            "missing actual {material:?}"
+        );
+    }
+    assert!(mesh.scene.trees > 15 && mesh.scene.plants > 50);
+    assert_eq!(
+        mesh.checksum,
+        mesh_snapshot_with_options(&snapshot, 128, &options)
+            .unwrap()
+            .checksum
+    );
+}

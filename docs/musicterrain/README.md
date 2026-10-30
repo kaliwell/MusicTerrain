@@ -61,13 +61,18 @@ cargo run -p musicterrain -- demo --silent-preview
 The default preview now includes grass/dirt/stone layers, oak trees, cutout grass
 and flowers, sand banks, translucent pond water, coal/iron ore, gravel/clay and
 actual carved cave entrances/walls. Alpine terrain uses snow. Daylight sky and
-block clouds use Horizon's existing renderer. All 36 built-in texture layers are
+block clouds use Horizon's existing renderer. All 54 built-in texture layers are
 original generated pixel art; no Minecraft texture is bundled or downloaded.
 
 Eleven seeded biomes are available: meadow, forest, alpine, shore, birch forest,
 taiga, desert, badlands, savanna, swamp and tropical jungle. Jungle adds
-12–14-block trees with thick trunks, hanging vines and ferns. Settings cycles Auto / each biome;
+ordinary and giant trees, thick trunks, rounded crowns, hanging vines, bamboo,
+bushes, melons, cocoa and ferns. Settings cycles Auto / each biome;
 `--biome desert` selects one at launch. [Biome comparison and details](BIOMES.md).
+
+Village Auto / Showcase / Off is available in Settings or `--villages`.
+`--biome meadow --villages showcase` opens the origin village preview.
+See [rich ecology and village details](WORLD_DETAILS.md).
 
 Trees/Plants, Water and Caves are independent controls on Settings. They rebuild
 the actual geometry and invalidate old-generation results. Equivalent CLI flags:

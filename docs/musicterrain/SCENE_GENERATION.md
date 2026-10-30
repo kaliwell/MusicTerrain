@@ -4,13 +4,14 @@ The native MusicTerrain preview now builds a textured, decorated voxel scene thr
 
 ## Data flow
 
-`TerrainSnapshot + SceneOptions → TerrainField heights/density → Ecology surface/cave columns → bounded material volume → exposed terrain faces → seeded decorations → Horizon section meshes`.
+`TerrainSnapshot + SceneOptions → TerrainField heights/density → Ecology surface/cave columns → bounded material volume → village material overlays → exposed terrain faces → seeded decorations → Horizon section meshes`.
 
-`visual::SceneOptions` has three independent, enabled-by-default switches: `vegetation`, `water`, and `caves`. `mesh_snapshot` and `MeshWorker::submit` use these defaults. `mesh_snapshot_with_options` and `submit_with_options` accept explicit options. Options participate in the completed-snapshot cache identity; changing a switch cannot reuse the preceding geometry. Preview generation changes are separate from the deterministic core heightmap export.
+`visual::SceneOptions` has three independent, enabled-by-default switches: `vegetation`, `water`, and `caves`. `mesh_snapshot` and `MeshWorker::submit` use these defaults. `mesh_snapshot_with_options` and `submit_with_options` accept explicit options. Options participate in the completed-snapshot cache identity; changing a switch cannot reuse the preceding geometry. Biome selection and VillageMode are also part of SceneOptions and cache identity.
+Preview generation changes are separate from the deterministic core heightmap export.
 
 ## Materials and terrain
 
-The stable material layers are defined in `src/materials.rs`: grass top/side, dirt, stone, sand, water, oak bark/end grain, oak leaves, short grass, poppy, dandelion, snow, coal ore, iron ore, gravel and clay. The default atlas consists entirely of original pixel art. An optional local resource texture overlay is handled by the material loader and renderer, not copied into the repository.
+The original base material layers include the following in `src/materials.rs`: grass top/side, dirt, stone, sand, water, oak bark/end grain, oak leaves, short grass, poppy, dandelion, snow, coal ore, iron ore, gravel and clay. The default atlas consists entirely of original pixel art. An optional local resource texture overlay is handled by the material loader and renderer, not copied into the repository.
 
 Grass tops and sides use separate layers. Three dirt layers lie beneath ordinary grass, followed by stone. Ecology selects shore sand and alpine snow. Seeded three-dimensional ore patches, gravel and clay appear on exposed deep faces. Vertex colours use the material's tint, directional face shading and a small music colour response, instead of tinting every material with the same landscape colour.
 
@@ -47,3 +48,13 @@ The primary height-field volume has at most 64×64 horizontal samples and 128 ve
 `tests/scene_mesh.rs` checks default preset content, real switch effects, determinism, material-layer identity, alpha/cutout flags, section bounds, texture UV bounds, option-sensitive cache identity and density topology. `tests/visual_pipeline.rs` retains revision, queue, invalid input and fixed-time geometry checks. The flat terrain test disables scene enrichments and checks the complete exterior area and outward winding even though material boundaries now split its faces.
 
 Actual command results and measured performance are recorded in `TEST_REPORT.md` and `PERFORMANCE.md`; these design budgets are not frame-rate claims.
+
+## Rich ecology / village increment
+
+There are now 54 stable original material layers. Jungle includes variable ordinary
+and giant trees, rounded crowns, cocoa, bamboo, bushes and melons. Other biomes
+have distinct understory. Tree/plant halos are independently clipped, preserving
+whole/tiled ecology. Villages are full deterministic world-cell plans before
+clipping; their material cells are installed into the temporary volume before
+face culling, and their reserved footprint suppresses vegetation. Crops use
+existing cutout plant rendering. Details and limits: [WORLD_DETAILS](WORLD_DETAILS.md).

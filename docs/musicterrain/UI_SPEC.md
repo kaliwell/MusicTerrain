@@ -52,3 +52,12 @@ It cycles through all ten named biomes and returns to Auto. This changes real
 surface/decoration meshes and invalidates generation revisions. Scene selections
 are runtime options, not saved terrain presets or undoable parameter edits.
 `--biome NAME` initializes the same control. See [BIOMES](BIOMES.md).
+
+## Village preview
+
+Settings now has **VILLAGES AUTO / SHOWCASE / OFF** below Biome. It switches actual
+structure geometry independently of vegetation; revision and cache invalidation
+follow the existing controls. The bottom status reports house/farm counts, or
+**HEIGHT FIELD ONLY** for density/island previews or **SELECT 64 X 64** for
+large extents. Diagnostics also reports village,
+house and farm counts. `--villages off|auto|showcase` sets the same runtime option.

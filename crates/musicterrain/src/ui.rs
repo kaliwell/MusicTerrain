@@ -60,6 +60,7 @@ pub enum Action {
     Water,
     Caves,
     Biome,
+    Villages,
 }
 #[derive(Clone)]
 struct Hit {
@@ -720,9 +721,23 @@ impl Ui {
                     Action::Biome,
                     false,
                 );
-                text(&mut h, x, 635.0, "TEXTURES", MUTED, 1.0);
-                let source: String = v.texture_info.chars().take(38).collect();
-                text(&mut h, x, 654.0, &source, INK, 1.0);
+                self.button(
+                    &mut h,
+                    [x, 625.0, sw, 30.0],
+                    &format!("VILLAGES {}", v.scene_options.villages.name()),
+                    Action::Villages,
+                    false,
+                );
+                let density = v.effective_parameters.island_strength > 0.1
+                    || (v.scene_options.caves && v.effective_parameters.cave_threshold < 0.5);
+                let village_status = if density {
+                    "VILLAGES: HEIGHT FIELD ONLY".to_owned()
+                } else if v.size > 64 {
+                    "VILLAGES: SELECT 64 X 64".to_owned()
+                } else {
+                    format!("HOUSES {} - FARMS {}", v.scene.houses, v.scene.farms)
+                };
+                text(&mut h, x, 663.0, &village_status, MUTED, 1.0);
             }
             Page::Diagnostics => {
                 let lines = [
@@ -752,6 +767,10 @@ impl Ui {
                     format!("SILENCE {}", v.features.silence),
                     format!("TREES {} - PLANTS {}", v.scene.trees, v.scene.plants),
                     format!("CAVE FACES {}", v.scene.cave_faces),
+                    format!(
+                        "VILLAGES {} HOUSES {} FARMS {}",
+                        v.scene.villages, v.scene.houses, v.scene.farms
+                    ),
                     format!("WATER QUADS {}", v.scene.water_quads),
                     format!(
                         "MATERIAL KINDS {}",

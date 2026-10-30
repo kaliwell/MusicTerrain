@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 pub const WATER_LEVEL: f32 = 8.0;
 pub const MAX_SCENE_SIZE: u32 = 256;
 const TREE_CELL: i32 = 14;
+/// Maximum tree crown or branch offset queried across preview region edges.
+pub const TREE_HALO: i32 = 5;
 const PLANT_CELL: i32 = 6;
 const CAVE_CELL: i32 = 48;
 
@@ -90,6 +92,14 @@ pub enum DecorationKind {
     Poppy,
     Dandelion,
     Rock,
+    Bush,
+    Bamboo,
+    Melon,
+    Pumpkin,
+    RedMushroom,
+    BrownMushroom,
+    Sunflower,
+    SugarCane,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorldDecoration {
@@ -255,7 +265,12 @@ impl Ecology {
         }
         for (dx, dz) in [(2, 0), (-2, 0), (0, 2), (0, -2)] {
             let nearby = surface(x + dx, z + dz);
-            if !nearby.is_finite() || (nearby - height).abs() > 2.75 {
+            let slope_limit = if self.biome(x, z, height) == SceneBiome::Jungle {
+                4.5
+            } else {
+                2.75
+            };
+            if !nearby.is_finite() || (nearby - height).abs() > slope_limit {
                 return None;
             }
         }
@@ -269,16 +284,23 @@ impl Ecology {
                 _ => DecorationKind::OakTree,
             },
             event_id: id,
-            scale: match self.biome(x, z, height) {
-                SceneBiome::Jungle => 12,
-                SceneBiome::Taiga => 8,
-                SceneBiome::BirchForest => 6,
-                _ => 4,
-            } + ((id >> 32) % 3) as u8,
+            scale: if self.biome(x, z, height) == SceneBiome::Jungle {
+                if (id >> 28) % 5 < 2 {
+                    5 + ((id >> 32) % 5) as u8
+                } else {
+                    12 + ((id >> 32) % 6) as u8
+                }
+            } else {
+                (match self.biome(x, z, height) {
+                    SceneBiome::Taiga => 8,
+                    SceneBiome::BirchForest => 6,
+                    _ => 4,
+                }) + ((id >> 32) % 3) as u8
+            },
         })
     }
-    /// Returns all anchor plants plus trees whose radius-3 crown intersects the region.
-    /// Shared edge trees have identical event IDs; callers clip geometry to their own region.
+    /// Returns anchor plants and intersecting radius-5 trees/radius-2 bushes/radius-1 bamboo patches.
+    /// Shared edge features have identical event IDs; callers clip geometry to their own region.
     /// Fixed world grids bound requests to fewer than 2,500 objects at 256².
     pub fn decorations(
         &self,
@@ -296,27 +318,35 @@ impl Ecology {
         let end_x = ox + size as i32;
         let end_z = oz + size as i32;
         let mut out = Vec::new();
-        for cz in (oz - 3).div_euclid(TREE_CELL)..=(end_z + 2).div_euclid(TREE_CELL) {
-            for cx in (ox - 3).div_euclid(TREE_CELL)..=(end_x + 2).div_euclid(TREE_CELL) {
+        for cz in
+            (oz - TREE_HALO).div_euclid(TREE_CELL)..=(end_z + TREE_HALO - 1).div_euclid(TREE_CELL)
+        {
+            for cx in (ox - TREE_HALO).div_euclid(TREE_CELL)
+                ..=(end_x + TREE_HALO - 1).div_euclid(TREE_CELL)
+            {
                 if let Some(tree) = self.tree(cx, cz, &surface) {
                     let [x, _, z] = tree.anchor;
-                    if x + 3 >= ox && x - 3 < end_x && z + 3 >= oz && z - 3 < end_z {
+                    if x + TREE_HALO >= ox
+                        && x - TREE_HALO < end_x
+                        && z + TREE_HALO >= oz
+                        && z - TREE_HALO < end_z
+                    {
                         out.push(tree);
                     }
                 }
             }
         }
         let tree_count = out.len();
-        for cz in oz.div_euclid(PLANT_CELL)..=(end_z - 1).div_euclid(PLANT_CELL) {
-            for cx in ox.div_euclid(PLANT_CELL)..=(end_x - 1).div_euclid(PLANT_CELL) {
+        for cz in (oz - 2).div_euclid(PLANT_CELL)..=(end_z + 1).div_euclid(PLANT_CELL) {
+            for cx in (ox - 2).div_euclid(PLANT_CELL)..=(end_x + 1).div_euclid(PLANT_CELL) {
                 let id = self.hash(cx, cz, 0x504c_414e_5453);
                 let x = cx * PLANT_CELL + (id % 6) as i32;
                 let z = cz * PLANT_CELL + ((id >> 8) % 6) as i32;
-                if x < ox || x >= end_x || z < oz || z >= end_z || (id >> 16) % 100 > 86 {
+                if (id >> 16) % 100 > 86 {
                     continue;
                 }
                 let h = surface(x, z);
-                if !h.is_finite() || !(WATER_LEVEL + 2.0..=126.0).contains(&h) {
+                if !h.is_finite() || !(WATER_LEVEL + 1.0..=126.0).contains(&h) {
                     continue;
                 }
                 let y = h.round() as i32;
@@ -333,44 +363,125 @@ impl Ecology {
                 if !neighbor.is_finite() || (neighbor - h).abs() > 2.0 {
                     continue;
                 }
+                let near_water = (WATER_LEVEL + 1.0..=WATER_LEVEL + 2.0).contains(&h)
+                    && [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                        .into_iter()
+                        .any(|(dx, dz)| {
+                            let neighbor = surface(x + dx, z + dz);
+                            neighbor.is_finite() && neighbor <= WATER_LEVEL
+                        });
+                let variety = (id >> 24) % 100;
                 let kind = match self.biome(x, z, h) {
-                    SceneBiome::Shore => continue,
+                    SceneBiome::Shore => {
+                        if near_water {
+                            DecorationKind::SugarCane
+                        } else {
+                            continue;
+                        }
+                    }
                     SceneBiome::Desert | SceneBiome::Badlands => {
-                        if (id >> 24).is_multiple_of(3) {
+                        if variety.is_multiple_of(3) {
                             DecorationKind::Cactus
                         } else {
                             DecorationKind::DeadBush
                         }
                     }
                     SceneBiome::Jungle => {
-                        if (id >> 24).is_multiple_of(3) {
-                            DecorationKind::TallGrass
-                        } else {
+                        let patch = self
+                            .climate
+                            .get2(f64::from(x) * 0.055 + 73.0, f64::from(z) * 0.055 - 41.0);
+                        if near_water {
+                            DecorationKind::SugarCane
+                        } else if variety < 22 {
+                            DecorationKind::Bush
+                        } else if variety < 45 && patch > -0.2 {
+                            DecorationKind::Bamboo
+                        } else if variety < 52 {
+                            DecorationKind::Melon
+                        } else if variety < 86 {
                             DecorationKind::Fern
+                        } else {
+                            DecorationKind::TallGrass
                         }
                     }
-                    SceneBiome::Taiga => DecorationKind::Rock,
-                    SceneBiome::Savanna => DecorationKind::TallGrass,
+                    SceneBiome::Taiga => match variety {
+                        0..=22 => DecorationKind::BrownMushroom,
+                        23..=35 => DecorationKind::RedMushroom,
+                        36..=66 => DecorationKind::Fern,
+                        67..=80 => DecorationKind::Bush,
+                        _ => DecorationKind::Rock,
+                    },
+                    SceneBiome::Savanna => {
+                        if variety < 25 {
+                            DecorationKind::Bush
+                        } else {
+                            DecorationKind::TallGrass
+                        }
+                    }
+                    SceneBiome::Swamp => {
+                        if near_water {
+                            DecorationKind::SugarCane
+                        } else {
+                            match variety {
+                                0..=20 => DecorationKind::BrownMushroom,
+                                21..=34 => DecorationKind::RedMushroom,
+                                35..=63 => DecorationKind::Bush,
+                                64..=78 => DecorationKind::Fern,
+                                _ => DecorationKind::TallGrass,
+                            }
+                        }
+                    }
                     SceneBiome::Alpine => {
-                        if !(id >> 24).is_multiple_of(4) {
+                        if !variety.is_multiple_of(4) {
                             continue;
                         }
                         DecorationKind::Rock
                     }
-                    _ => match (id >> 24) % 10 {
-                        0 | 1 => DecorationKind::Poppy,
-                        2 | 3 => DecorationKind::Dandelion,
+                    SceneBiome::Forest => match variety {
+                        0..=14 => DecorationKind::BrownMushroom,
+                        15..=27 => DecorationKind::RedMushroom,
+                        28..=43 => DecorationKind::Bush,
+                        44..=48 => DecorationKind::Pumpkin,
+                        49..=59 => DecorationKind::Poppy,
+                        60..=71 => DecorationKind::Dandelion,
+                        _ => DecorationKind::TallGrass,
+                    },
+                    SceneBiome::BirchForest => match variety {
+                        0..=18 => DecorationKind::Bush,
+                        19..=26 => DecorationKind::BrownMushroom,
+                        27..=42 => DecorationKind::Poppy,
+                        43..=60 => DecorationKind::Dandelion,
+                        _ => DecorationKind::TallGrass,
+                    },
+                    SceneBiome::Meadow => match variety {
+                        0..=8 => DecorationKind::Pumpkin,
+                        9..=25 => DecorationKind::Sunflower,
+                        26..=42 => DecorationKind::Poppy,
+                        43..=60 => DecorationKind::Dandelion,
                         _ => DecorationKind::TallGrass,
                     },
                 };
+                let radius = match kind {
+                    DecorationKind::Bush => 2,
+                    DecorationKind::Bamboo => 1,
+                    _ => 0,
+                };
+                if x + radius < ox || x - radius >= end_x || z + radius < oz || z - radius >= end_z
+                {
+                    continue;
+                }
                 out.push(WorldDecoration {
                     anchor: [x, y, z],
                     kind,
                     event_id: id,
-                    scale: if kind == DecorationKind::Cactus {
-                        2 + ((id >> 32) % 3) as u8
-                    } else {
-                        1
+                    scale: match kind {
+                        DecorationKind::Bamboo => 5 + ((id >> 32) % 4) as u8,
+                        DecorationKind::Cactus | DecorationKind::SugarCane => {
+                            2 + ((id >> 32) % 3) as u8
+                        }
+                        DecorationKind::Bush => 1 + ((id >> 32) % 2) as u8,
+                        DecorationKind::Sunflower => 2,
+                        _ => 1,
                     },
                 });
             }

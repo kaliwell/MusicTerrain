@@ -35,3 +35,16 @@ Do not treat the standalone demo as an integrated playable Minecraft world.
 - Complete: original local-pack-compatible jungle bark, end grain, leaves, vine,
   fern; 36 atlas layers. Actual renderer screenshots and all-biome UI checks.
 - Not started: vine climbing, animal entities, persistent-world jungle features.
+
+## Rich ecology and village increment (2026-10-30)
+
+- Complete: mixed jungle tree sizes, irregular crowns, bushes, bamboo patches,
+  cocoa/melons and differentiated understory across existing biomes.
+- Complete: original village building/road/well/farm templates, natural eligibility,
+  biome styles, full-plan-before-clipping determinism, terrain support and bounded
+  cancellation-aware generation.
+- Complete: real UI/CLI modes, village counts, density-mode limitation indicator,
+  material/structure tests and actual renderer/UI captures.
+- Partial: villages are preview geometry; exact vanilla jigsaw placement is not ported.
+- Not started: villagers/animals, gameplay collision, crop growth and world-save
+  integration for these decorations.

@@ -191,3 +191,26 @@ bounded `ecology.rs` adapter for seeded anchors/cave intervals and Horizon core
 Simplex for climate. It emits Horizon section vertices for original simplified
 oak/plant geometry. This is not claimed to reproduce vanilla tree/biome parity.
 Material volumes remain isolated from the vanilla streamer, blocks and saves.
+
+## Ecology and villages follow-up (2026-10-30)
+
+Rechecked `crates/horizon-world/src/worldgen/tree.rs::TreeFeature`, `tree/trunk.rs`,
+`tree/foliage.rs`, `tree/decorator.rs`, `bamboo.rs::BambooFeature::{from_json,place}`,
+`feature_graph.rs`'s Bamboo binding and `structure/jigsaw.rs::{assemble,assemble_drawing}`.
+These operate through registered block-state bindings, feature/placement contexts
+and, for villages, resource-backed template pools and structure NBT. The prepared
+Minecraft resources are still unavailable in this environment. Copying their
+proprietary templates/artwork into the repository is prohibited.
+
+MusicTerrain therefore references recognisable species/biome building vocabulary
+with original preview geometry and templates. `ecology.rs::decorations` owns
+seeded feature anchors; `visual.rs::decorations` owns native material geometry;
+`village.rs::VillageScene::generate` owns bounded full-cell plans before region
+clipping. `Volume::apply_village` installs original building/road/farm material
+cells before Horizon face meshing. This avoids changing vanilla feature bindings,
+integrated-server state, save data or introducing a second renderer.
+
+It is not vanilla village jigsaw parity: natural eligibility is limited to the
+supported meadow/desert/savanna/taiga/alpine preview types; Jungle/forest/swamp
+villages require explicit Showcase. Villager entities, block behaviour, lighting,
+collision and save integration remain separate work.

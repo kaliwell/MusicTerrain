@@ -1,0 +1,3 @@
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_interaction.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-elements-verified-ui --scene --biomes --villages
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-elements-jungle-verified --frames 90 --biome jungle --villages off --require-scene
+DISPLAY=:100 LP_NUM_THREADS=2 python3 tools/musicterrain_smoke.py --sysroot /workspace/scratch/sysroot --output /workspace/scratch/musicterrain-elements-village-verified --frames 90 --biome meadow --villages showcase --require-village

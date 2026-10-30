@@ -198,3 +198,31 @@ is unchanged and no Minecraft world persistence/collision/fluid simulation is cl
   data homes, silent diagnostic clock and Xvfb/software Vulkan. Hardware and
   Windows performance were not measured; vines have no climbing collision.
 - Raw evidence: [verification/jungle](verification/jungle/).
+
+## Rich ecology and villages — 2026-10-30 UTC
+
+- `cargo test -p musicterrain`: **77 passed**, none ignored (8 unit, 9 audio,
+  5 CLI, 13 ecology, 7 materials, 8 scene mesh, 13 terrain/mapping,
+  7 village, 7 visual tests).
+- `cargo test -p musicterrain --no-default-features`: **46 passed**.
+- Strict all-target Clippy, workspace format check, native build, public-tree
+  scan, Python harness syntax and `git diff --check`: passed.
+- Added actual jungle bamboo/melon/cocoa/fern mesh coverage; bounded layered
+  understory and halo tests; hollow house/window/door/road/farm content;
+  village eligibility/style/cancel/invalid-ground tests; Showcase and Auto
+  clipped-generation regressions; water and village switch/LOD checks.
+- Review found and fixed Auto candidate halo omission (27-block radius plus
+  16-block centre jitter now uses margin44), per-stalk bamboo support checks,
+  and wet plot eligibility using actual world-space local pond water levels.
+  Wet plots are rejected before creating foundations. Village plans query
+  surrounding pond data beyond the clipped preview, preserving full-plan decisions.
+- Actual editor `--scene --biomes --villages`: exit 0, **39 editor events,
+  38 distinct uploaded meshes**. All eleven biomes and village Showcase/Off/Auto,
+  pause, seek, undo/redo and preset preservation passed.
+- Actual 64² / 1280×800 native renderer smoke: jungle and village each completed
+  91 frames, real distinct mesh uploads and PNG readback. Jungle used
+  `--biome jungle --villages off --require-scene`; village used
+  `--biome meadow --villages showcase --require-village`.
+- Same fresh isolated data homes and explicit silent diagnostic clock on
+  Xvfb/CPU Vulkan; no Windows, hardware-GPU or audible-device claim.
+- [Actual scenes](WORLD_DETAILS.md); raw outputs: [verification/elements](verification/elements/).

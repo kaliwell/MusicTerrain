@@ -16,4 +16,6 @@ pub mod transport;
 #[cfg(feature = "native")]
 pub mod ui;
 #[cfg(feature = "native")]
+pub mod village;
+#[cfg(feature = "native")]
 pub mod visual;

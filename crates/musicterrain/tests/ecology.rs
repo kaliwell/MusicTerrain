@@ -24,7 +24,10 @@ fn seeded_layout_is_repeatable_and_different_seeds_change_it() {
         for second in &trees[i + 1..] {
             let dx = first.anchor[0] - second.anchor[0];
             let dz = first.anchor[2] - second.anchor[2];
-            assert!(dx * dx + dz * dz >= 81, "tree crowns overlap");
+            assert!(
+                dx * dx + dz * dz >= 81,
+                "tree anchors are unexpectedly crowded"
+            );
         }
     }
 }
@@ -289,11 +292,87 @@ fn jungle_has_tall_dense_trees_and_fern_understory_without_flowers_or_cacti() {
     for decoration in &layout {
         assert!(matches!(
             decoration.kind,
-            DecorationKind::JungleTree | DecorationKind::Fern | DecorationKind::TallGrass
+            DecorationKind::JungleTree
+                | DecorationKind::Fern
+                | DecorationKind::TallGrass
+                | DecorationKind::Bamboo
+                | DecorationKind::Bush
+                | DecorationKind::Melon
+                | DecorationKind::SugarCane
         ));
         if decoration.kind == DecorationKind::JungleTree {
-            assert!((12..=14).contains(&decoration.scale));
+            assert!((5..=9).contains(&decoration.scale) || (12..=17).contains(&decoration.scale));
         }
     }
     assert_eq!(layout, jungle.decorations([-64, -64], 128, |_, _| 25.0));
+}
+
+#[test]
+fn jungle_has_patch_bamboo_bushes_melons_and_two_tree_layers() {
+    let ecology = Ecology::new(42).with_biome(Some(SceneBiome::Jungle));
+    let scene = ecology.decorations([-64, -64], 128, |_, _| 25.0);
+    for kind in [
+        DecorationKind::Bush,
+        DecorationKind::Bamboo,
+        DecorationKind::Melon,
+        DecorationKind::Fern,
+    ] {
+        assert!(
+            scene.iter().any(|d| d.kind == kind),
+            "missing jungle understory: {kind:?}"
+        );
+    }
+    assert!(
+        scene
+            .iter()
+            .any(|d| d.kind == DecorationKind::JungleTree && d.scale <= 9)
+    );
+    assert!(
+        scene
+            .iter()
+            .any(|d| d.kind == DecorationKind::JungleTree && d.scale >= 12)
+    );
+    assert!(scene.len() < 2500);
+    let max = ecology.decorations([-128, -128], 256, |_, _| 25.0);
+    assert!(max.len() < 2500);
+}
+
+#[test]
+fn every_gentle_biome_has_specific_new_understory() {
+    for (biome, kind) in [
+        (SceneBiome::Forest, DecorationKind::RedMushroom),
+        (SceneBiome::BirchForest, DecorationKind::Bush),
+        (SceneBiome::Meadow, DecorationKind::Sunflower),
+        (SceneBiome::Taiga, DecorationKind::BrownMushroom),
+        (SceneBiome::Savanna, DecorationKind::Bush),
+        (SceneBiome::Swamp, DecorationKind::BrownMushroom),
+    ] {
+        let ecology = Ecology::new(42).with_biome(Some(biome));
+        assert!(
+            ecology
+                .decorations([-64, -64], 128, |_, _| 25.0)
+                .iter()
+                .any(|d| d.kind == kind),
+            "missing {kind:?} in {biome:?}"
+        );
+    }
+}
+
+#[test]
+fn sugar_cane_requires_finite_actual_low_bank_neighbor() {
+    let ecology = Ecology::new(42).with_biome(Some(SceneBiome::Shore));
+    assert!(ecology.decorations([-64, -64], 128, |_, _| 25.0).is_empty());
+    assert!(ecology.decorations([-64, -64], 128, |_, _| 9.0).is_empty());
+    let wet = ecology.decorations([-64, -64], 128, |x, _| {
+        if x.rem_euclid(3) == 0 { 8.0 } else { 9.0 }
+    });
+    assert!(!wet.is_empty());
+    assert!(
+        wet.iter()
+            .all(|d| d.kind == DecorationKind::SugarCane && d.anchor[1] == 9)
+    );
+    let invalid_neighbors = ecology.decorations([-64, -64], 128, |x, _| {
+        if x.rem_euclid(3) == 0 { f32::NAN } else { 9.0 }
+    });
+    assert!(invalid_neighbors.is_empty());
 }

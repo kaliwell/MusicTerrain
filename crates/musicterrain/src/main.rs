@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
     if command == "help" || args.iter().any(|a| a == "--help" || a == "-h") {
         println!(
-            "MusicTerrain\n  demo | preview [--audio FILE] [--size 64|128|256] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB+WASD fly.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
+            "MusicTerrain\n  demo | preview [--audio FILE] [--size 64|128|256] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB+WASD fly.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
         );
         return Ok(());
     }
@@ -59,6 +59,11 @@ fn run() -> Result<(), Box<dyn Error>> {
                             };
                         }
                         "--resources" => options.resources = Some(value(&args, &mut i)?.into()),
+                        "--villages" => {
+                            options.scene_options.villages =
+                                musicterrain::village::VillageMode::parse(value(&args, &mut i)?)
+                                    .ok_or("--villages must be off, auto or showcase")?;
+                        }
                         "--no-vegetation" => options.scene_options.vegetation = false,
                         "--no-water" => options.scene_options.water = false,
                         "--no-caves" => options.scene_options.caves = false,

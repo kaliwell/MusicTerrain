@@ -77,3 +77,12 @@ harnesses, which need the user's private prepared game data and JDK 25.
 Run server-thread and in-frame world open/close, vanilla baseline, mode switch,
 save reopen, error/cancel, and stale revision scenarios separately. Software
 offscreen rendering cannot establish RTX 3060/Windows 60 FPS acceptance.
+
+## Rich world details and village adapter
+
+`village.rs` creates original bounded preview structures; `Volume::apply_village`
+applies their materials before meshing through the existing Horizon renderer.
+It does not create server-side block states, structure starts, POIs or villagers.
+The original resource-backed jigsaw/template path remains untouched. See
+[WORLD_DETAILS](WORLD_DETAILS.md) and the source audit follow-up for actual
+upstream interfaces and why this preview uses an isolated adapter.

@@ -40,3 +40,13 @@
   persistence. The deterministic heightmap CLI remains the core-field export.
 - Preview scene switches currently belong to the session/CLI, not the existing
   visualization-preset JSON schema. Full snapshot export is future work.
+
+- Rich ecology and villages reference Minecraft's visual vocabulary using original
+  templates/materials; exact vanilla feature/jigsaw parity is not implemented.
+- Villages are suspended in the island/strong-density path. 128/256 extents also suspend villages, with a Settings notice;
+  use 64×64 to retain one-block walls and interiors. Steep musical terrain may reject plots or expose
+  tall foundations. Showcase is world-origin anchored, not camera-relative.
+- Village houses/crops/wells are visible geometry. Villager/animal entities,
+  crop growth, climbing, collision and persistent-world integration are absent.
+- Sugar cane currently uses nominal level-8 banks; elevated preview ponds do not
+  all receive it. Glass uses cutout frames, not a new blended-glass renderer.

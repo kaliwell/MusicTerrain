@@ -20,6 +20,9 @@ def main():
     parser.add_argument('--audio', type=Path)
     parser.add_argument('--resources', type=Path)
     parser.add_argument('--require-scene', action='store_true')
+    parser.add_argument('--biome', default='auto')
+    parser.add_argument('--villages', choices=('off','auto','showcase'), default='auto')
+    parser.add_argument('--require-village', action='store_true')
     for feature in ('vegetation','water','caves'):
         parser.add_argument('--no-'+feature, action='store_true')
     args=parser.parse_args()
@@ -46,6 +49,7 @@ def main():
         env['HORIZON_NO_AUDIO']='1'
         env['RUST_LOG']='musicterrain=info'
         command=[str(binary),'demo','--silent-preview','--offscreen','--frames',str(args.frames),'--size',str(args.size),'--screenshot',str(output/'preview.png'),'--preset-file',str(scratch/'preset.json'),'--log-dir',str(output/'logs')]
+        command.extend(['--biome',args.biome,'--villages',args.villages])
         if args.audio:
             command.extend(['--audio',str(args.audio.resolve())])
         if args.resources:
@@ -74,13 +78,15 @@ def main():
         hashes=re.findall(r'mesh_hash=(\d+)',text)
         upload_records=[line for line in text.splitlines() if 'preview mesh uploaded' in line]
         meshes=[float(v) for line in upload_records for v in re.findall(r'generation_ms=([\d.]+)',line)]
-        scenes=[dict((key,int(value)) for key,value in re.findall(r'(trees|plants|cave_faces|water_quads|material_kinds)=(\d+)',line)) for line in upload_records]
+        scenes=[dict((key,int(value)) for key,value in re.findall(r'(villages|houses|farms|trees|plants|cave_faces|water_quads|material_kinds)=(\d+)',line)) for line in upload_records]
         scenes=[scene for scene in scenes if scene]
         completion=re.search(r'frames=(\d+) meshes=(\d+) distinct_meshes=(\d+) elapsed=([\d.]+)',text)
         performance=[dict((key,float(value)) for key,value in re.findall(r'(frame_ms_mean|frame_ms_max|fps|queued_jobs|generation_ms|upload_ms)=([\d.]+)',line)) for line in text.splitlines() if 'preview performance' in line]
         report={'scene_samples':scenes,'performance_samples':performance,'exit_code':process.returncode,'wall_seconds':elapsed,'peak_rss_kib_sampled':rss,'distinct_mesh_hashes':len(set(hashes)),'mesh_updates':len(hashes),'mesh_mean_ms':sum(meshes)/len(meshes) if meshes else None,'mesh_max_ms':max(meshes) if meshes else None,'extent':args.size,'resolution':[1280,800],'audio':'imported file' if args.audio else 'synthesized12s','clock':'explicit silent software clock','graphics':'software Vulkan requested' if args.sysroot else 'environment adapter','build_binary':str(binary),'screenshot':'preview.png','completion_log':completion.group(0) if completion else None}
         (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report,indent=2))
+        if args.require_village:
+            assert any(scene.get('houses',0)>=2 and scene.get('farms',0)>0 for scene in scenes),'missing actual village geometry'
         if args.require_scene:
             assert scenes,'missing scene geometry statistics'
             for feature,key in [('vegetation','trees'),('vegetation','plants'),('water','water_quads'),('caves','cave_faces')]:

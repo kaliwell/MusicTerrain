@@ -122,6 +122,13 @@ fn leaves_plants_and_water_keep_their_rendering_alpha() {
         Material::TallGrass,
         Material::Poppy,
         Material::Dandelion,
+        Material::Bamboo,
+        Material::RedMushroom,
+        Material::BrownMushroom,
+        Material::Sunflower,
+        Material::SugarCane,
+        Material::Wheat,
+        Material::Glass,
     ] {
         let pixels = layer(&atlas, material);
         assert!(pixels.as_chunks::<4>().0.iter().any(|p| p[3] == 0));
@@ -274,4 +281,39 @@ fn invalid_roots_corrupt_pngs_and_resource_budgets_produce_clear_errors() {
     assert!(
         TextureAtlas::load(Some(Path::new("/a/nonexistent/musicterrain-texture-root"))).is_err()
     );
+}
+
+#[test]
+fn biome_and_village_layers_append_ids_and_keep_solid_and_glass_contracts() {
+    let atlas = TextureAtlas::load(None).unwrap();
+    assert_eq!(Material::Bamboo.layer(), 36);
+    assert_eq!(Material::SprucePlanks.layer(), 53);
+    assert_eq!(Material::ALL.len(), 54);
+    for material in [
+        Material::Melon,
+        Material::Pumpkin,
+        Material::Cocoa,
+        Material::OakPlanks,
+        Material::Cobblestone,
+        Material::RoofTiles,
+        Material::Farmland,
+        Material::HayBale,
+        Material::Path,
+        Material::Sandstone,
+        Material::SprucePlanks,
+    ] {
+        assert!(
+            layer(&atlas, material)
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| p[3] == 255),
+            "solid {material:?} has cutouts"
+        );
+    }
+    let glass = layer(&atlas, Material::Glass);
+    assert_eq!(Material::Glass.tint(), [255; 3]);
+    assert!(!Material::Glass.translucent());
+    assert_eq!(glass[3], 255); // Outer frame is opaque.
+    assert_eq!(glass[((8 * 32 + 8) * 4 + 3) as usize], 0); // Clear interior.
 }

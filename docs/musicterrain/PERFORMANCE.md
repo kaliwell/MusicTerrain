@@ -129,3 +129,28 @@ that run is not used as the isolated measurement above. Keep hardware claims
 separate: RTX 3060 / 1080p 60 FPS and physical audio latency are still unverified.
 The smoke parser now computes mesh means from actual upload records only,
 rather than also counting repeated performance-status samples.
+
+## Rich ecology / village measurements — 2026-10-30 UTC
+
+Native 64² previews at 1280×800, 91 frames each, two-CPU container, Xvfb,
+llvmpipe software Vulkan, explicit silent clock; includes startup and screenshot
+readback. Existing adaptive worker scheduling remains active. No GPU hardware
+or physical audio was exercised.
+
+| Scene | Wall time | Sampled peak RSS | Mesh mean / max | Measured one-second FPS windows |
+| --- | --- | --- | --- | --- |
+| Jungle, villages off | 6.66 s | 214452 KiB (209.4 MiB) | 70.58 / 211.12 ms | 14.7–22.5 |
+| Meadow, village showcase | 5.40 s | 203436 KiB (198.7 MiB) | 47.32 / 124.03 ms | 18.9–25.6 |
+
+These are software-renderer observations, not a 60 FPS/RTX3060 guarantee or a
+long-duration leak test. Jungle meshes include bush voxels, larger canopies and
+many cutout stems. Queued work retains the existing single pending slot;
+revision rejection and shutdown are tested. Village templates are capped at
+150,000 planned material cells and checked for cancellation per candidate/plot.
+To preserve correct one-block walls, windows and hollow interiors, villages are
+suspended in coarse (128/256) and strong-density/island modes, with a Settings
+notice, instead of collapsing their full-resolution templates into coarse cells.
+
+Raw scene/performance samples, memory measurements and commands are preserved in
+[verification/elements](verification/elements/). Earlier development runs before
+the water/placement fixes were slower and are not the final figures above.

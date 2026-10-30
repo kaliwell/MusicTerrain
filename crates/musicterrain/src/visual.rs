@@ -4,6 +4,7 @@ use crate::{
     ecology::{CaveColumn, DecorationKind, Ecology, SceneBiome, SurfaceKind},
     materials::Material,
     terrain::{GenerationRevision, TerrainField, TerrainSnapshot},
+    village::{VillageMode, VillageScene},
 };
 use horizon_client_render::{
     chunk::MIN_Y,
@@ -27,6 +28,7 @@ pub struct SceneOptions {
     pub water: bool,
     pub caves: bool,
     pub biome: Option<SceneBiome>,
+    pub villages: VillageMode,
 }
 impl Default for SceneOptions {
     fn default() -> Self {
@@ -35,6 +37,7 @@ impl Default for SceneOptions {
             water: true,
             caves: true,
             biome: None,
+            villages: VillageMode::Auto,
         }
     }
 }
@@ -47,6 +50,9 @@ pub struct SceneStats {
     pub material_quads: [u32; Material::ALL.len()],
     pub solid_voxels: u32,
     pub carved_voxels: u32,
+    pub villages: u32,
+    pub houses: u32,
+    pub farms: u32,
 }
 
 impl Default for SceneStats {
@@ -59,6 +65,9 @@ impl Default for SceneStats {
             material_quads: [0; Material::ALL.len()],
             solid_voxels: 0,
             carved_voxels: 0,
+            villages: 0,
+            houses: 0,
+            farms: 0,
         }
     }
 }
@@ -292,9 +301,46 @@ fn generate_mesh(
     } else {
         size.div_ceil(64).next_power_of_two()
     };
-    let volume = Volume::generate(
+    let mut volume = Volume::generate(
         snapshot, &field, &ecology, size, step, density, options, &cancelled,
     )?;
+    // A clipped query may intersect a village whose full plan extends another
+    // 54 blocks beyond it. Water eligibility must use that whole world-space area.
+    let village_ponds =
+        if options.water && options.villages != VillageMode::Off && !density && step == 1 {
+            ponds(snapshot, &field, volume.origin - 64, size + 128)
+        } else {
+            Vec::new()
+        };
+    let villages = if density || step > 1 {
+        VillageScene::default()
+    } else {
+        VillageScene::generate(
+            snapshot.seed,
+            [volume.origin; 2],
+            size,
+            options.villages,
+            &ecology,
+            |x, z| {
+                let h = base_height(&field, snapshot, x, z);
+                if options.water {
+                    let (ground, water) = pond_height(h, x, z, &village_ponds);
+                    if ground < water {
+                        f32::NAN
+                    } else {
+                        ground as f32
+                    }
+                } else {
+                    h as f32
+                }
+            },
+            &cancelled,
+        )?
+    };
+    volume.apply_village(&villages, options.water);
+    builder.scene.villages = villages.villages;
+    builder.scene.houses = villages.houses;
+    builder.scene.farms = villages.farms;
     builder.scene.solid_voxels = volume
         .cells
         .iter()
@@ -303,7 +349,19 @@ fn generate_mesh(
     builder.scene.carved_voxels = volume.carved.iter().filter(|v| **v).count() as u32;
     volume.mesh(&mut builder, &cancelled)?;
     if options.vegetation {
-        decorations(&mut builder, &volume, &field, &ecology, options, &cancelled)?;
+        decorations(
+            &mut builder,
+            &volume,
+            &field,
+            &ecology,
+            options,
+            &villages,
+            &cancelled,
+        )?;
+        for crop in &villages.crops {
+            builder.plant(*crop, Material::Wheat);
+            builder.scene.plants += 1;
+        }
     }
     if cancelled() {
         return None;
@@ -476,6 +534,28 @@ impl Volume {
             None
         } else {
             Some(self.surfaces[(z / self.step) as usize * self.n + (x / self.step) as usize])
+        }
+    }
+    fn apply_village(&mut self, scene: &VillageScene, water: bool) {
+        for (p, material) in &scene.blocks {
+            let x = (p[0] - self.origin) / self.step;
+            let z = (p[2] - self.origin) / self.step;
+            let y = p[1] / self.ystep;
+            if x >= 0
+                && z >= 0
+                && y >= 0
+                && x < self.n as i32
+                && z < self.n as i32
+                && y < self.vertical as i32
+            {
+                let index = self.index(x as usize, y as usize, z as usize);
+                self.cells[index] = encode(if !water && *material == Material::Water {
+                    Material::Clay
+                } else {
+                    *material
+                });
+                self.carved[index] = false;
+            }
         }
     }
     fn generate(
@@ -680,6 +760,7 @@ fn decorations(
     field: &TerrainField,
     ecology: &Ecology,
     options: SceneOptions,
+    villages: &VillageScene,
     cancelled: &impl Fn() -> bool,
 ) -> Option<()> {
     let height = |x, z| {
@@ -695,18 +776,23 @@ fn decorations(
     let layout = ecology.decorations([volume.origin; 2], volume.size, height);
     let mut blocks = BTreeMap::<[i32; 3], Material>::new();
     let mut plants = Vec::new();
+    let mut pods = Vec::new();
     let inside = |p: [i32; 3]| {
         p[0] >= volume.origin
             && p[2] >= volume.origin
             && p[0] < volume.origin + volume.size as i32
             && p[2] < volume.origin + volume.size as i32
-            && (0..144).contains(&p[1])
+            && (0..152).contains(&p[1])
+            && !villages.reserved(p[0], p[2])
     };
     for decoration in layout {
         if cancelled() {
             return None;
         }
         let [x, y, z] = decoration.anchor;
+        if villages.reserved(x, z) {
+            continue;
+        }
         // A genuine solid top supports vegetation; water and cave openings cannot.
         let support = decode(volume.world_get([x, y - 1, z]));
         if inside([x, y, z])
@@ -741,7 +827,9 @@ fn decorations(
                 let trunk = i32::from(decoration.scale);
                 let mut emitted = false;
                 for dy in 0..trunk {
-                    let offsets: &[(i32, i32)] = if decoration.kind == DecorationKind::JungleTree {
+                    let offsets: &[(i32, i32)] = if decoration.kind == DecorationKind::JungleTree
+                        && decoration.scale >= 12
+                    {
                         &[(0, 0), (1, 0), (0, 1), (1, 1)]
                     } else {
                         &[(0, 0)]
@@ -757,7 +845,9 @@ fn decorations(
                     }
                 }
                 let (bottom, top) = match decoration.kind {
-                    DecorationKind::JungleTree => (trunk - 5, trunk + 1),
+                    DecorationKind::JungleTree => {
+                        (if trunk >= 12 { trunk - 5 } else { trunk - 2 }, trunk + 1)
+                    }
                     DecorationKind::SpruceTree => (2, trunk + 1),
                     DecorationKind::AcaciaTree => (trunk - 1, trunk),
                     _ => (trunk - 2, trunk + 1),
@@ -765,10 +855,16 @@ fn decorations(
                 for dy in bottom..=top {
                     let radius: i32 = match decoration.kind {
                         DecorationKind::JungleTree => {
-                            if dy >= trunk {
-                                2
-                            } else {
+                            if trunk < 12 {
+                                if dy == trunk + 1 {
+                                    1
+                                } else {
+                                    2 + (decoration.event_id % 2) as i32
+                                }
+                            } else if dy >= trunk {
                                 3
+                            } else {
+                                4 + ((decoration.event_id >> 9) % 2) as i32
                             }
                         }
                         DecorationKind::SpruceTree => ((trunk + 1 - dy) / 3 + 1).min(3),
@@ -790,6 +886,18 @@ fn decorations(
                             {
                                 continue;
                             }
+                            // Rounded, seeded irregular crowns replace identical cubes.
+                            let crown = dx * dx + dz * dz;
+                            if crown > radius * radius + 1
+                                || (crown > (radius - 1).pow(2)
+                                    && (decoration
+                                        .event_id
+                                        .rotate_left((dx + dz + dy).rem_euclid(64) as u32)
+                                        & 7)
+                                        == 0)
+                            {
+                                continue;
+                            }
                             let p = [x + dx, y + dy, z + dz];
                             if inside(p) && volume.world_get(p) == 0 {
                                 blocks.entry(p).or_insert(leaves);
@@ -798,8 +906,28 @@ fn decorations(
                     }
                 }
                 if decoration.kind == DecorationKind::JungleTree {
+                    // Cocoa pods attach to trunk sides, not random floating positions.
+                    for (dx, dz) in [(-1, 0), (0, -1)] {
+                        let p = [x + dx, y + 2 + (decoration.event_id % 3) as i32, z + dz];
+                        if inside(p) && volume.world_get(p) == 0 {
+                            pods.push((
+                                p,
+                                if dx < 0 {
+                                    [0.4, 0.12, 0.15]
+                                } else {
+                                    [0.15, 0.12, 0.4]
+                                },
+                                if dx < 0 {
+                                    [0.6, 0.65, 0.7]
+                                } else {
+                                    [0.7, 0.65, 0.6]
+                                },
+                            ));
+                        }
+                    }
+                    let r = if trunk >= 12 { 4 } else { 2 };
                     for (side, (dx, dz)) in
-                        [(3, 0), (-3, 0), (0, 3), (0, -3)].into_iter().enumerate()
+                        [(r, 0), (-r, 0), (0, r), (0, -r)].into_iter().enumerate()
                     {
                         let length =
                             3 + (decoration.event_id.rotate_right(side as u32 * 8) % 4) as i32;
@@ -819,16 +947,100 @@ fn decorations(
             | DecorationKind::Poppy
             | DecorationKind::Dandelion
             | DecorationKind::DeadBush
-            | DecorationKind::Fern => {
+            | DecorationKind::Fern
+            | DecorationKind::RedMushroom
+            | DecorationKind::BrownMushroom
+            | DecorationKind::Sunflower => {
                 if inside([x, y, z]) {
                     let material = match decoration.kind {
+                        DecorationKind::RedMushroom => Material::RedMushroom,
+                        DecorationKind::BrownMushroom => Material::BrownMushroom,
+                        DecorationKind::Sunflower => Material::Sunflower,
                         DecorationKind::Fern => Material::Fern,
                         DecorationKind::DeadBush => Material::DeadBush,
                         DecorationKind::Poppy => Material::Poppy,
                         DecorationKind::Dandelion => Material::Dandelion,
                         _ => Material::TallGrass,
                     };
-                    plants.push(([x, y, z], material));
+                    if decoration.kind == DecorationKind::Sunflower
+                        && inside([x, y + 1, z])
+                        && volume.world_get([x, y + 1, z]) == 0
+                    {
+                        plants.push(([x, y, z], Material::TallGrass));
+                        plants.push(([x, y + 1, z], material));
+                    } else {
+                        plants.push(([x, y, z], material));
+                    }
+                }
+            }
+            DecorationKind::Bush => {
+                let radius = i32::from(decoration.scale.min(2));
+                let leaves = if ecology.biome(x, z, y as f32) == SceneBiome::Jungle {
+                    Material::JungleLeaves
+                } else {
+                    Material::OakLeaves
+                };
+                for dy in 0..=1 {
+                    for dz in -radius..=radius {
+                        for dx in -radius..=radius {
+                            let p = [x + dx, y + dy, z + dz];
+                            if dx * dx + dz * dz <= (radius + 1 - dy).pow(2)
+                                && inside(p)
+                                && volume.world_get(p) == 0
+                            {
+                                blocks.entry(p).or_insert(leaves);
+                            }
+                        }
+                    }
+                }
+                if inside([x, y, z]) {
+                    builder.scene.plants += 1;
+                }
+            }
+            DecorationKind::Bamboo | DecorationKind::SugarCane => {
+                let material = if decoration.kind == DecorationKind::Bamboo {
+                    Material::Bamboo
+                } else {
+                    Material::SugarCane
+                };
+                let offsets: &[(i32, i32)] = if decoration.kind == DecorationKind::Bamboo {
+                    &[(0, 0), (-1, 0), (0, 1)]
+                } else {
+                    &[(0, 0)]
+                };
+                for &(dx, dz) in offsets {
+                    let ground = height(x + dx, z + dz).round() as i32;
+                    if (ground - y).abs() > 2 {
+                        continue;
+                    }
+                    let foot = [x + dx, ground, z + dz];
+                    if inside(foot) {
+                        let support = decode(volume.world_get([foot[0], ground - 1, foot[2]]));
+                        if support.is_none()
+                            || support == Some(Material::Water)
+                            || volume.world_get(foot) != 0
+                        {
+                            continue;
+                        }
+                    }
+                    for dy in 0..i32::from(decoration.scale) {
+                        let p = [x + dx, ground + dy, z + dz];
+                        if inside(p) && volume.world_get(p) == 0 {
+                            plants.push((p, material));
+                        }
+                    }
+                }
+            }
+            DecorationKind::Melon | DecorationKind::Pumpkin => {
+                if inside([x, y, z]) {
+                    blocks.entry([x, y, z]).or_insert(
+                        if decoration.kind == DecorationKind::Melon {
+                            Material::Melon
+                        } else {
+                            Material::Pumpkin
+                        },
+                    );
+                    builder.scene.plants += 1;
                 }
             }
             DecorationKind::Cactus => {
@@ -871,6 +1083,11 @@ fn decorations(
         }
     }
     builder.scene.solid_voxels += blocks.len() as u32;
+    for (p, offset, extent) in pods {
+        if !blocks.contains_key(&p) {
+            builder.detail_box(p, offset, extent, Material::Cocoa);
+        }
+    }
     for (p, material) in plants {
         if blocks.contains_key(&p) {
             continue;
@@ -1001,6 +1218,29 @@ impl<'a> MeshBuilder<'a> {
                 };
                 self.quad(at, corners, uv, material, face.shade() * ambient, cave);
             }
+        }
+    }
+    fn detail_box(
+        &mut self,
+        anchor: [i32; 3],
+        offset: [f32; 3],
+        extent: [f32; 3],
+        material: Material,
+    ) {
+        for face in Face::ALL {
+            let corners = face.corners().map(|p| {
+                std::array::from_fn(|axis| {
+                    anchor[axis] as f32 + offset[axis] + p[axis] as f32 * extent[axis]
+                })
+            });
+            self.quad(
+                anchor,
+                corners,
+                [[0., 1.], [0., 0.], [1., 0.], [1., 1.]],
+                material,
+                face.shade(),
+                false,
+            );
         }
     }
     fn plant(&mut self, anchor: [i32; 3], material: Material) {

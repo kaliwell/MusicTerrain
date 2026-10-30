@@ -21,7 +21,7 @@ birch forest, taiga, desert, badlands, savanna, swamp. Only the biome selector c
 | Badlands / `badlands` | Red sand / 12-block terracotta subsoil | Cacti and dead bushes |
 | Savanna / `savanna` | Grass / dirt | Sparse acacias, gray bark, warm leaves, flat wide crowns, grass |
 | Swamp / `swamp` | Grass / clay | Oaks, flowers and clay exposed around existing ponds and caves |
-| Jungle / `jungle` | Grass / dirt | Dense 12–14-block jungle trees with 2×2 trunks, broad crowns, hanging vines and fern understory |
+| Jungle / `jungle` | Grass / dirt | Mixed ordinary/giant jungle trees, broad crowns, vines, bamboo, bushes, cocoa, melons and ferns |
 
 ![Tropical jungle in the actual editor](images/biomes/biome-jungle.png)
 
@@ -59,10 +59,10 @@ They share the existing audio-driven height/density field and pond/cave network;
 this update does not implement separate biome terrain-height rules, swamp water
 simulation, animal entities, collision or persistent Minecraft saves.
 
-All trees fit the existing radius-3 query halo; spruce trunks are 8–10 blocks,
-birch trunks 6–8, oak/acacia trunks 4–6, jungle trunks 12–14.
+All trees fit the expanded radius-5 tree query halo; spruce trunks are 8–10 blocks,
+birch trunks 6–8, oak/acacia trunks 4–6, jungle trunks 12–17.
 Jungle uses a 96% tree-cell acceptance rate versus Forest's 78%; slope, cave
-and water safety checks still apply. Jungle crown radius remains three blocks;
+and water safety checks still apply. Giant jungle crown radius reaches five blocks;
 four seeded vine strands hang 3–6 cells beneath the canopy. Vines use crossed
 cutout planes, not Minecraft's attachment block states or climbing physics.
 Shared edge anchors keep stable event IDs.
@@ -70,7 +70,7 @@ Decoration requests retain their 256-block limit and bounded world-cell grids.
 
 Fourteen original pixel-art layers were appended to the original 17 material IDs,
 so older indices retain their meaning. The jungle update appends another five
-layers (36 total): jungle bark, end grain, leaves, vine and fern. Birch/spruce/acacia trunks and leaves,
+layers (36 at that stage; now 54 total with village and understory materials): jungle bark, end grain, leaves, vine and fern. Birch/spruce/acacia trunks and leaves,
 red sand, terracotta, podzol, cactus and dead bush also accept matching local PNGs.
 No proprietary textures are included.
 
@@ -82,3 +82,5 @@ for all seven added biomes, distinct real material meshes and repeated checksums
 The X11 harness accepts `--biomes` to click every selection, wait for real mesh
 uploads and capture screenshots; it also restores Auto. Results are recorded in
 [TEST_REPORT](TEST_REPORT.md).
+
+[Current richer ecology and village implementation](WORLD_DETAILS.md).

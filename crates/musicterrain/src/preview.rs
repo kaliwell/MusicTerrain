@@ -528,6 +528,11 @@ impl App {
                 self.revision.0 = self.revision.0.wrapping_add(1);
                 self.dirty = true;
             }
+            Action::Villages => {
+                self.options.scene_options.villages = self.options.scene_options.villages.next();
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
             Action::Biome => {
                 use crate::ecology::SceneBiome;
                 self.options.scene_options.biome = match self.options.scene_options.biome {
@@ -695,6 +700,9 @@ impl App {
                 audio_time = self.last_mesh_audio,
                 generation_ms = self.generation_ms,
                 revision = self.revision.0,
+                villages = self.scene.villages,
+                houses = self.scene.houses,
+                farms = self.scene.farms,
                 trees = self.scene.trees,
                 plants = self.scene.plants,
                 cave_faces = self.scene.cave_faces,

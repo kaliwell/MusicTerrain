@@ -21,9 +21,9 @@ the native mesher. Alpine regions can receive small rocks. Ground features avoid
 water, nonfinite heights, steep sampled slopes and cave-mouth blocks.
 
 Trees use a 14-block world grid with bounded jitter. Candidate anchors are at
-least 9 blocks apart, preventing overlap for radius-3 crowns. Plants use a
+least 9 blocks apart, keeping anchors separated; giant crowns may naturally overlap. Plants use a
 6-block grid, with grass, poppies and dandelions. Trees near query edges are
-returned with a three-block halo so neighbouring meshes can independently clip
+returned with a five-block halo so neighbouring meshes can independently clip
 the same crown. Plant suppression near trunks uses that same halo. Returned
 world anchors, type, scale and event IDs are independent of request order.
 
@@ -68,3 +68,12 @@ column/signed-field agreement, continuity across world cells, bounded requests,
 invalid coordinates and surface profiles. Additional biome tests cover all seven
 added species/soil contracts, automatic reachability and tiled layout equality. Actual consolidated results
 belong in `TEST_REPORT.md`; this document does not substitute for running them.
+
+## Layered understory update
+
+Trees query `TREE_HALO=5`; bushes and bamboo use two/one block halos. Jungle
+mixes 5–9 and 12–17 block trees with bamboo patches, bushes, melon and fern
+anchors. Forest/taiga/swamp/meadow now select different mushroom, flower,
+pumpkin, bush and grass distributions. Cane requires a finite sampled bank
+adjacent to nominal water. Decoration grids and the <2500 object bound remain.
+Native geometry/material and village details are in [WORLD_DETAILS](WORLD_DETAILS.md).

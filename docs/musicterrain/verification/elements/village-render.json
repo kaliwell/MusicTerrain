@@ -1,0 +1,478 @@
+{
+  "scene_samples": [
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3023,
+      "water_quads": 276,
+      "material_kinds": 25
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3197,
+      "water_quads": 244,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3064,
+      "water_quads": 258,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2990,
+      "water_quads": 259,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2911,
+      "water_quads": 264,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3298,
+      "water_quads": 398,
+      "material_kinds": 25
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3137,
+      "water_quads": 335,
+      "material_kinds": 25
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2890,
+      "water_quads": 254,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2877,
+      "water_quads": 249,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2881,
+      "water_quads": 242,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 55,
+      "cave_faces": 3042,
+      "water_quads": 246,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3115,
+      "water_quads": 247,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3085,
+      "water_quads": 243,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2992,
+      "water_quads": 240,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2981,
+      "water_quads": 238,
+      "material_kinds": 26
+    },
+    {
+      "villages": 0,
+      "houses": 0,
+      "farms": 0,
+      "trees": 0,
+      "plants": 96,
+      "cave_faces": 3270,
+      "water_quads": 298,
+      "material_kinds": 16
+    },
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3207,
+      "water_quads": 318,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3071,
+      "water_quads": 291,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2963,
+      "water_quads": 270,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2875,
+      "water_quads": 251,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2883,
+      "water_quads": 250,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 55,
+      "cave_faces": 2943,
+      "water_quads": 307,
+      "material_kinds": 25
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2930,
+      "water_quads": 257,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2978,
+      "water_quads": 248,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2948,
+      "water_quads": 248,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2915,
+      "water_quads": 248,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2932,
+      "water_quads": 248,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3303,
+      "water_quads": 253,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3182,
+      "water_quads": 245,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3082,
+      "water_quads": 255,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3001,
+      "water_quads": 257,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2949,
+      "water_quads": 257,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2944,
+      "water_quads": 251,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3273,
+      "water_quads": 371,
+      "material_kinds": 25
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2998,
+      "water_quads": 274,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2890,
+      "water_quads": 253,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2860,
+      "water_quads": 249,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 2875,
+      "water_quads": 249,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 2,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3010,
+      "water_quads": 245,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3134,
+      "water_quads": 249,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3059,
+      "water_quads": 245,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3049,
+      "water_quads": 240,
+      "material_kinds": 26
+    },
+    {
+      "villages": 1,
+      "houses": 3,
+      "farms": 1,
+      "trees": 0,
+      "plants": 56,
+      "cave_faces": 3047,
+      "water_quads": 242,
+      "material_kinds": 26
+    }
+  ],
+  "performance_samples": [
+    {
+      "frame_ms_mean": 52.927623368421045,
+      "frame_ms_max": 149.698062,
+      "fps": 18.893725740132968,
+      "queued_jobs": 0.0,
+      "generation_ms": 33.051631927490234,
+      "upload_ms": 1.0925920009613037
+    },
+    {
+      "frame_ms_mean": 45.02561852173913,
+      "frame_ms_max": 106.716161,
+      "fps": 22.209578298567585,
+      "queued_jobs": 0.0,
+      "generation_ms": 42.54630661010742,
+      "upload_ms": 1.7982150316238403
+    },
+    {
+      "frame_ms_mean": 39.1072968888889,
+      "frame_ms_max": 82.43545900000001,
+      "fps": 25.570675540198703,
+      "queued_jobs": 0.0,
+      "generation_ms": 56.721168518066406,
+      "upload_ms": 0.8233699798583984
+    }
+  ],
+  "exit_code": 0,
+  "wall_seconds": 5.399812342999212,
+  "peak_rss_kib_sampled": 203436,
+  "distinct_mesh_hashes": 43,
+  "mesh_updates": 43,
+  "mesh_mean_ms": 47.32379633881325,
+  "mesh_max_ms": 124.02617645263672,
+  "extent": 64,
+  "resolution": [
+    1280,
+    800
+  ],
+  "audio": "synthesized12s",
+  "clock": "explicit silent software clock",
+  "graphics": "software Vulkan requested",
+  "build_binary": "/workspace/horizon/target/debug/musicterrain",
+  "screenshot": "preview.png",
+  "completion_log": "frames=91 meshes=43 distinct_meshes=32 elapsed=5.322740127"
+}
