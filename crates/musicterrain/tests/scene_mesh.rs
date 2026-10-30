@@ -83,6 +83,7 @@ fn independent_scene_switches_remove_their_actual_geometry() {
         vegetation: false,
         water: false,
         caves: false,
+        ..SceneOptions::default()
     };
     let mesh = mesh_snapshot_with_options(&snapshot, 64, &bare).unwrap();
     assert_eq!(mesh.scene.trees, 0);
@@ -148,7 +149,7 @@ fn textured_scene_is_deterministic_and_all_quads_stay_section_local() {
         assert_eq!(mesh.translucent.len() % 4, 0);
         for vertex in mesh.solid.iter().chain(&mesh.translucent) {
             assert!(
-                vertex.layer < 17,
+                usize::from(vertex.layer) < Material::ALL.len(),
                 "leaf alpha must use cutout, without force-opaque bit"
             );
             assert!(
@@ -182,6 +183,7 @@ fn scene_options_participate_in_snapshot_cache_identity() {
         vegetation: false,
         water: false,
         caves: false,
+        ..SceneOptions::default()
     };
     let mut worker = MeshWorker::new();
     assert!(worker.submit_with_options(snapshot.clone(), 16, bare));
@@ -225,4 +227,80 @@ fn density_islands_keep_real_topology_and_materials() {
                 .iter()
                 .all(|p| p.is_finite() && (0.0..=16.0).contains(p)))
     );
+}
+
+#[test]
+fn biome_selection_changes_real_mesh_species_and_ground_without_changing_audio() {
+    use musicterrain::ecology::SceneBiome;
+    let mut snapshot = scene();
+    snapshot.parameters.amplitude = 0.;
+    snapshot.parameters.detail = 0.;
+    snapshot.parameters.base_height = 25.;
+    let mut hashes = std::collections::HashSet::new();
+    for (biome, layers) in [
+        (
+            SceneBiome::BirchForest,
+            vec![
+                Material::BirchLogSide,
+                Material::BirchLogTop,
+                Material::BirchLeaves,
+            ],
+        ),
+        (
+            SceneBiome::Taiga,
+            vec![
+                Material::Podzol,
+                Material::SpruceLogSide,
+                Material::SpruceLeaves,
+            ],
+        ),
+        (
+            SceneBiome::Desert,
+            vec![Material::Sand, Material::Cactus, Material::DeadBush],
+        ),
+        (
+            SceneBiome::Badlands,
+            vec![Material::RedSand, Material::Terracotta, Material::Cactus],
+        ),
+        (
+            SceneBiome::Savanna,
+            vec![
+                Material::GrassTop,
+                Material::AcaciaLogSide,
+                Material::AcaciaLeaves,
+            ],
+        ),
+        (
+            SceneBiome::Swamp,
+            vec![Material::GrassTop, Material::Clay, Material::OakLeaves],
+        ),
+    ] {
+        let options = SceneOptions {
+            biome: Some(biome),
+            water: false,
+            caves: false,
+            ..SceneOptions::default()
+        };
+        let mesh = mesh_snapshot_with_options(&snapshot, 64, &options).unwrap();
+        for material in layers {
+            assert!(
+                mesh.scene.material_quads[material.layer() as usize] > 0,
+                "missing {material:?} in {biome:?}"
+            );
+        }
+        assert!(
+            hashes.insert(mesh.checksum),
+            "identical geometry for {biome:?}"
+        );
+        assert_eq!(
+            mesh.checksum,
+            mesh_snapshot_with_options(&snapshot, 64, &options)
+                .unwrap()
+                .checksum
+        );
+        println!(
+            "{biome:?}: {} vertices, trees={}, plants={}",
+            mesh.vertices, mesh.scene.trees, mesh.scene.plants
+        );
+    }
 }

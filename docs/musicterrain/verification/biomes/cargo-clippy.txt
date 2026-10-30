@@ -1,0 +1,2 @@
+    Checking musicterrain v0.1.0 (/workspace/horizon/crates/musicterrain)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.25s

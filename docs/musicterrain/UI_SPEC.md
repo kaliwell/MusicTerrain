@@ -44,3 +44,11 @@ notices should persist long enough to read and identify the failed operation.
 Windows system loopback is a capability with platform-specific tests. Until the
 capture path is implemented, a label explaining unavailability is truthful;
 selecting an input device without consuming samples is not capture support.
+
+## Biome selector
+
+Settings includes a **BIOME AUTO** button below the independent scene switches.
+It cycles through all ten named biomes and returns to Auto. This changes real
+surface/decoration meshes and invalidates generation revisions. Scene selections
+are runtime options, not saved terrain presets or undoable parameter edits.
+`--biome NAME` initializes the same control. See [BIOMES](BIOMES.md).

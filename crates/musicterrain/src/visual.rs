@@ -1,7 +1,7 @@
 //! Bounded preview meshing, using Horizon's production vertex and section formats.
 //! Preview voxels never enter the persistent world or its server thread.
 use crate::{
-    ecology::{CaveColumn, DecorationKind, Ecology, SurfaceKind},
+    ecology::{CaveColumn, DecorationKind, Ecology, SceneBiome, SurfaceKind},
     materials::Material,
     terrain::{GenerationRevision, TerrainField, TerrainSnapshot},
 };
@@ -26,6 +26,7 @@ pub struct SceneOptions {
     pub vegetation: bool,
     pub water: bool,
     pub caves: bool,
+    pub biome: Option<SceneBiome>,
 }
 impl Default for SceneOptions {
     fn default() -> Self {
@@ -33,6 +34,7 @@ impl Default for SceneOptions {
             vegetation: true,
             water: true,
             caves: true,
+            biome: None,
         }
     }
 }
@@ -42,7 +44,7 @@ pub struct SceneStats {
     pub plants: u32,
     pub cave_faces: u32,
     pub water_quads: u32,
-    pub material_quads: [u32; 17],
+    pub material_quads: [u32; Material::ALL.len()],
     pub solid_voxels: u32,
     pub carved_voxels: u32,
 }
@@ -267,7 +269,7 @@ fn generate_mesh(
     }
     let start = Instant::now();
     let field = TerrainField::new(snapshot.seed);
-    let ecology = Ecology::new(snapshot.seed);
+    let ecology = Ecology::new(snapshot.seed).with_biome(options.biome);
     let mut builder = MeshBuilder::new(snapshot);
     let density = snapshot.parameters.island_strength > 0.1
         || (options.caves && snapshot.parameters.cave_threshold < 0.5);
@@ -400,6 +402,10 @@ fn surface_material(kind: SurfaceKind) -> Material {
         SurfaceKind::Stone => Material::Stone,
         SurfaceKind::Sand => Material::Sand,
         SurfaceKind::Snow => Material::Snow,
+        SurfaceKind::RedSand => Material::RedSand,
+        SurfaceKind::Terracotta => Material::Terracotta,
+        SurfaceKind::Podzol => Material::Podzol,
+        SurfaceKind::Clay => Material::Clay,
     }
 }
 struct Volume {
@@ -651,7 +657,7 @@ fn visible(material: Material, other: Option<Material>) -> bool {
     if material == Material::Water {
         other.is_none()
     } else {
-        other.is_none() || other == Some(Material::Water) || other == Some(Material::OakLeaves)
+        other.is_none() || other == Some(Material::Water) || other.is_some_and(Material::leaves)
     }
 }
 fn decorations(
@@ -696,23 +702,52 @@ fn decorations(
                     | Some(Material::Dirt)
                     | Some(Material::Snow)
                     | Some(Material::Stone)
+                    | Some(Material::Podzol)
+                    | Some(Material::Sand)
+                    | Some(Material::RedSand)
+                    | Some(Material::Terracotta)
+                    | Some(Material::Clay)
             ) || volume.world_get([x, y, z]) != 0)
         {
             continue;
         }
         match decoration.kind {
-            DecorationKind::OakTree => {
+            DecorationKind::OakTree
+            | DecorationKind::BirchTree
+            | DecorationKind::SpruceTree
+            | DecorationKind::AcaciaTree => {
+                let (log, leaves) = match decoration.kind {
+                    DecorationKind::BirchTree => (Material::BirchLogSide, Material::BirchLeaves),
+                    DecorationKind::SpruceTree => (Material::SpruceLogSide, Material::SpruceLeaves),
+                    DecorationKind::AcaciaTree => (Material::AcaciaLogSide, Material::AcaciaLeaves),
+                    _ => (Material::OakLogSide, Material::OakLeaves),
+                };
                 let trunk = i32::from(decoration.scale);
                 let mut emitted = false;
                 for dy in 0..trunk {
                     let p = [x, y + dy, z];
                     if inside(p) && volume.world_get(p) == 0 {
-                        blocks.insert(p, Material::OakLogSide);
+                        blocks.insert(p, log);
                         emitted = true;
                     }
                 }
-                for dy in trunk - 2..=trunk + 1 {
-                    let radius: i32 = if dy == trunk + 1 { 1 } else { 2 };
+                let (bottom, top) = match decoration.kind {
+                    DecorationKind::SpruceTree => (2, trunk + 1),
+                    DecorationKind::AcaciaTree => (trunk - 1, trunk),
+                    _ => (trunk - 2, trunk + 1),
+                };
+                for dy in bottom..=top {
+                    let radius: i32 = match decoration.kind {
+                        DecorationKind::SpruceTree => ((trunk + 1 - dy) / 3 + 1).min(3),
+                        DecorationKind::AcaciaTree => 3 - (dy - bottom),
+                        _ => {
+                            if dy == trunk + 1 {
+                                1
+                            } else {
+                                2
+                            }
+                        }
+                    };
                     for dz in -radius..=radius {
                         for dx in -radius..=radius {
                             if radius == 2
@@ -724,7 +759,7 @@ fn decorations(
                             }
                             let p = [x + dx, y + dy, z + dz];
                             if inside(p) && volume.world_get(p) == 0 {
-                                blocks.entry(p).or_insert(Material::OakLeaves);
+                                blocks.entry(p).or_insert(leaves);
                             }
                         }
                     }
@@ -733,14 +768,29 @@ fn decorations(
                     builder.scene.trees += 1;
                 }
             }
-            DecorationKind::TallGrass | DecorationKind::Poppy | DecorationKind::Dandelion => {
+            DecorationKind::TallGrass
+            | DecorationKind::Poppy
+            | DecorationKind::Dandelion
+            | DecorationKind::DeadBush => {
                 if inside([x, y, z]) {
                     let material = match decoration.kind {
+                        DecorationKind::DeadBush => Material::DeadBush,
                         DecorationKind::Poppy => Material::Poppy,
                         DecorationKind::Dandelion => Material::Dandelion,
                         _ => Material::TallGrass,
                     };
                     plants.push(([x, y, z], material));
+                }
+            }
+            DecorationKind::Cactus => {
+                for dy in 0..i32::from(decoration.scale) {
+                    let p = [x, y + dy, z];
+                    if inside(p) && volume.world_get(p) == 0 {
+                        blocks.entry(p).or_insert(Material::Cactus);
+                    }
+                }
+                if inside([x, y, z]) {
+                    builder.scene.plants += 1;
                 }
             }
             DecorationKind::Rock => {
@@ -761,7 +811,7 @@ fn decorations(
                 .get(&neighbor)
                 .copied()
                 .or_else(|| decode(volume.world_get(neighbor)));
-            let exposed = if *material == Material::OakLeaves {
+            let exposed = if material.leaves() {
                 other.is_none() || other == Some(Material::Water)
             } else {
                 visible(*material, other)
@@ -833,6 +883,9 @@ impl Face {
             (Material::GrassTop, Self::Down) => Material::Dirt,
             (Material::GrassTop, _) => Material::GrassSide,
             (Material::OakLogSide, Self::Up | Self::Down) => Material::OakLogTop,
+            (Material::BirchLogSide, Self::Up | Self::Down) => Material::BirchLogTop,
+            (Material::SpruceLogSide, Self::Up | Self::Down) => Material::SpruceLogTop,
+            (Material::AcaciaLogSide, Self::Up | Self::Down) => Material::AcaciaLogTop,
             _ => material,
         }
     }

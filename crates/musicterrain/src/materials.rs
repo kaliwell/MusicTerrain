@@ -33,10 +33,24 @@ pub enum Material {
     IronOre = 14,
     Gravel = 15,
     Clay = 16,
+    BirchLogSide = 17,
+    BirchLogTop = 18,
+    BirchLeaves = 19,
+    SpruceLogSide = 20,
+    SpruceLogTop = 21,
+    SpruceLeaves = 22,
+    AcaciaLogSide = 23,
+    AcaciaLogTop = 24,
+    AcaciaLeaves = 25,
+    RedSand = 26,
+    Terracotta = 27,
+    Podzol = 28,
+    Cactus = 29,
+    DeadBush = 30,
 }
 
 impl Material {
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 31] = [
         Self::GrassTop,
         Self::GrassSide,
         Self::Dirt,
@@ -54,6 +68,20 @@ impl Material {
         Self::IronOre,
         Self::Gravel,
         Self::Clay,
+        Self::BirchLogSide,
+        Self::BirchLogTop,
+        Self::BirchLeaves,
+        Self::SpruceLogSide,
+        Self::SpruceLogTop,
+        Self::SpruceLeaves,
+        Self::AcaciaLogSide,
+        Self::AcaciaLogTop,
+        Self::AcaciaLeaves,
+        Self::RedSand,
+        Self::Terracotta,
+        Self::Podzol,
+        Self::Cactus,
+        Self::DeadBush,
     ];
 
     pub const fn layer(self) -> u16 {
@@ -66,6 +94,9 @@ impl Material {
         match self {
             Self::GrassTop | Self::TallGrass => [112, 169, 76],
             Self::OakLeaves => [94, 151, 66],
+            Self::BirchLeaves => [130, 175, 68],
+            Self::SpruceLeaves => [62, 105, 83],
+            Self::AcaciaLeaves => [160, 168, 65],
             Self::Water => [78, 145, 225],
             _ => [255; 3],
         }
@@ -75,6 +106,12 @@ impl Material {
         matches!(self, Self::Water)
     }
 
+    pub const fn leaves(self) -> bool {
+        matches!(
+            self,
+            Self::OakLeaves | Self::BirchLeaves | Self::SpruceLeaves | Self::AcaciaLeaves
+        )
+    }
     fn filenames(self) -> &'static [&'static str] {
         match self {
             Self::GrassTop => &["grass_block_top.png"],
@@ -94,6 +131,20 @@ impl Material {
             Self::IronOre => &["iron_ore.png"],
             Self::Gravel => &["gravel.png"],
             Self::Clay => &["clay.png"],
+            Self::BirchLogSide => &["birch_log.png"],
+            Self::BirchLogTop => &["birch_log_top.png"],
+            Self::BirchLeaves => &["birch_leaves.png"],
+            Self::SpruceLogSide => &["spruce_log.png"],
+            Self::SpruceLogTop => &["spruce_log_top.png"],
+            Self::SpruceLeaves => &["spruce_leaves.png"],
+            Self::AcaciaLogSide => &["acacia_log.png"],
+            Self::AcaciaLogTop => &["acacia_log_top.png"],
+            Self::AcaciaLeaves => &["acacia_leaves.png"],
+            Self::RedSand => &["red_sand.png"],
+            Self::Terracotta => &["terracotta.png"],
+            Self::Podzol => &["podzol_top.png"],
+            Self::Cactus => &["cactus_side.png"],
+            Self::DeadBush => &["dead_bush.png"],
         }
     }
 }
@@ -363,7 +414,10 @@ fn procedural(material: Material) -> Vec<u8> {
                         )
                     }
                 }
-                Material::OakLeaves => color(
+                Material::OakLeaves
+                | Material::BirchLeaves
+                | Material::SpruceLeaves
+                | Material::AcaciaLeaves => color(
                     [190; 3],
                     shade + (hash(x / 3, y / 3, 9) % 43) as i32 - 21,
                     if grain.is_multiple_of(7) { 0 } else { 255 },
@@ -392,6 +446,59 @@ fn procedural(material: Material) -> Vec<u8> {
                     } else {
                         [0; 4]
                     }
+                }
+                Material::BirchLogSide => color(
+                    [224, 222, 207],
+                    if (x + hash(0, y / 2, 41) % 13) % 16 < 5 && y % 5 < 2 {
+                        -160
+                    } else {
+                        shade / 2
+                    },
+                    255,
+                ),
+                Material::SpruceLogSide => color(
+                    [79, 57, 37],
+                    shade / 2 - if x.is_multiple_of(4) { 18 } else { 0 },
+                    255,
+                ),
+                Material::AcaciaLogSide => color(
+                    [103, 100, 89],
+                    shade / 2 - if x.is_multiple_of(5) { 22 } else { 0 },
+                    255,
+                ),
+                Material::BirchLogTop | Material::SpruceLogTop | Material::AcaciaLogTop => {
+                    let rgb = match material {
+                        Material::BirchLogTop => [210, 192, 143],
+                        Material::AcaciaLogTop => [177, 96, 58],
+                        _ => [132, 101, 66],
+                    };
+                    let ring = (((x as i32 - 8).pow(2) + (y as i32 - 8).pow(2)) as u32).isqrt();
+                    color(
+                        rgb,
+                        shade / 3 - if ring.is_multiple_of(3) { 26 } else { 0 },
+                        255,
+                    )
+                }
+                Material::RedSand => color([190, 106, 50], shade / 2, 255),
+                Material::Terracotta => color(
+                    [161, 83, 56],
+                    shade / 3 - if y % 6 < 2 { 23 } else { 0 },
+                    255,
+                ),
+                Material::Podzol => color(
+                    [104, 75, 42],
+                    shade + if (x + y) % 5 == 0 { 16 } else { 0 },
+                    255,
+                ),
+                Material::Cactus => color(
+                    [69, 129, 48],
+                    shade / 2 - if x.is_multiple_of(4) { 24 } else { 0 },
+                    255,
+                ),
+                Material::DeadBush => {
+                    let stem = x == 8 && y > 5
+                        || (3..14).contains(&x) && (y == 7 + x / 3 || y == 15 - x / 2);
+                    color([135, 98, 52], shade, if stem { 255 } else { 0 })
                 }
                 Material::Snow => color([239, 245, 249], shade / 3, 255),
                 Material::CoalOre | Material::IronOre => {

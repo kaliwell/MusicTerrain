@@ -171,9 +171,93 @@ fn surface_profiles_distinguish_shores_meadows_forests_and_alpine() {
             let profile = ecology.surface_profile(x, z, 25.0);
             meadow |= profile.biome == SceneBiome::Meadow;
             forest |= profile.biome == SceneBiome::Forest;
-            assert_eq!(profile.top, SurfaceKind::Grass);
-            assert_eq!(profile.subsoil, SurfaceKind::Dirt);
+            if matches!(profile.biome, SceneBiome::Meadow | SceneBiome::Forest) {
+                assert_eq!(profile.top, SurfaceKind::Grass);
+                assert_eq!(profile.subsoil, SurfaceKind::Dirt);
+            }
         }
     }
     assert!(meadow && forest);
+}
+
+#[test]
+fn automatic_climate_reaches_every_lowland_biome_and_is_seeded() {
+    let ecology = Ecology::new(42);
+    let mut found = std::collections::HashSet::new();
+    let mut changed = false;
+    for z in (-2048..2048).step_by(64) {
+        for x in (-2048..2048).step_by(64) {
+            let biome = ecology.biome(x, z, 25.0);
+            assert_eq!(biome, Ecology::new(42).biome(x, z, 25.0));
+            found.insert(biome.name());
+            changed |= biome != Ecology::new(43).biome(x, z, 25.0);
+        }
+    }
+    for biome in SceneBiome::ALL {
+        if !matches!(biome, SceneBiome::Shore | SceneBiome::Alpine) {
+            assert!(found.contains(biome.name()), "unreachable biome {biome:?}");
+        }
+        assert_eq!(SceneBiome::parse(biome.name()), Some(biome));
+    }
+    assert!(changed);
+    assert_eq!(SceneBiome::parse("unknown"), None);
+}
+
+#[test]
+fn selected_biomes_have_specific_surfaces_species_and_order_independent_layouts() {
+    for (biome, top, species) in [
+        (
+            SceneBiome::BirchForest,
+            SurfaceKind::Grass,
+            DecorationKind::BirchTree,
+        ),
+        (
+            SceneBiome::Taiga,
+            SurfaceKind::Podzol,
+            DecorationKind::SpruceTree,
+        ),
+        (
+            SceneBiome::Desert,
+            SurfaceKind::Sand,
+            DecorationKind::Cactus,
+        ),
+        (
+            SceneBiome::Badlands,
+            SurfaceKind::RedSand,
+            DecorationKind::DeadBush,
+        ),
+        (
+            SceneBiome::Savanna,
+            SurfaceKind::Grass,
+            DecorationKind::AcaciaTree,
+        ),
+        (
+            SceneBiome::Swamp,
+            SurfaceKind::Grass,
+            DecorationKind::OakTree,
+        ),
+    ] {
+        let ecology = Ecology::new(42).with_biome(Some(biome));
+        assert_eq!(ecology.surface_profile(0, 0, 25.0).top, top);
+        let whole = by_event(ecology.decorations([-32, -32], 64, |_, _| 25.0));
+        assert!(
+            whole.values().any(|d| d.kind == species),
+            "missing {species:?}"
+        );
+        if matches!(biome, SceneBiome::Desert | SceneBiome::Badlands) {
+            assert!(!whole.values().any(|d| matches!(
+                d.kind,
+                DecorationKind::OakTree | DecorationKind::TallGrass | DecorationKind::Poppy
+            )));
+        }
+        let mut tiles = BTreeMap::new();
+        for origin in [[0, 0], [-32, -32], [0, -32], [-32, 0]] {
+            for (id, d) in by_event(ecology.decorations(origin, 32, |_, _| 25.0)) {
+                if let Some(old) = tiles.insert(id, d) {
+                    assert_eq!(old, d);
+                }
+            }
+        }
+        assert_eq!(whole, tiles, "tile seam in {biome:?}");
+    }
 }

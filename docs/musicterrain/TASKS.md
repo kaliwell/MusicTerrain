@@ -16,3 +16,14 @@ Completed acceptance: native build/render/readback, music-timed mesh changes, re
 editor interactions, fmt/clippy/test/build and recorded limits. Next: physical
 Windows audio and target GPU acceptance, then S3 game lifecycle integration.
 Do not treat the standalone demo as an integrated playable Minecraft world.
+
+## Biome increment (2026-10-30)
+
+- Complete: six additional preview biomes, seeded climate distribution and
+  explicit selection in Settings / CLI.
+- Complete: birch/spruce/acacia meshes, cactus/dead bush, 14 appended material
+  layers, region-edge halos and selection-aware cache identity.
+- Complete: 63 native tests / 42 headless tests, strict Clippy, format/build,
+  actual all-biome UI cycle and CLI renderer captures.
+- Not started: biome-specific terrain-height rules, animal entities, swamp
+  fluid physics and persistent vanilla biome/feature integration.

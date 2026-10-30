@@ -35,3 +35,14 @@
   geometry switches. No persistent-world or physical-fluid claim.
 - Verified 60 native tests, 40 headless tests, fmt/clippy/build, actual renderer
   readback, local-PNG rendering and real GUI switches. Evidence: verification/scene/.
+
+### Biome update — 2026-10-30 UTC
+
+- Expanded four preview biomes to ten, adding birch forest, taiga, desert,
+  badlands, savanna and swamp with seeded climate distribution.
+- Added birch/spruce/acacia species and crown shapes, cactus, dead bush,
+  red sand, terracotta and podzol; appended 14 original atlas layers (31 total).
+- Added real Settings biome cycling and validated `--biome` selection, included
+  selection in mesh cache identity and reused revision-based stale-result rejection.
+- Added automatic-distribution, tiled-ecology and real-mesh tests plus an X11
+  biome-switching harness. No vanilla generator or persistent-world changes.

@@ -86,13 +86,13 @@ fn layer(atlas: &TextureAtlas, material: Material) -> &[u8] {
 }
 
 #[test]
-fn original_pixel_art_has_seventeen_stable_distinct_layers() {
+fn original_pixel_art_has_stable_distinct_layers() {
     let atlas = TextureAtlas::load(None).unwrap();
     assert_eq!(
         (atlas.size, atlas.layers, atlas.loaded, atlas.fallback),
-        (32, 17, 0, 17)
+        (32, Material::ALL.len() as u32, 0, Material::ALL.len())
     );
-    assert_eq!(atlas.pixels.len(), 32 * 32 * 4 * 17);
+    assert_eq!(atlas.pixels.len(), 32 * 32 * 4 * Material::ALL.len());
     assert_eq!(atlas.missing, Material::ALL);
     let repeated = TextureAtlas::load(None).unwrap();
     assert_eq!(atlas.pixels, repeated.pixels);
@@ -112,6 +112,10 @@ fn leaves_plants_and_water_keep_their_rendering_alpha() {
     let atlas = TextureAtlas::load(None).unwrap();
     for material in [
         Material::OakLeaves,
+        Material::BirchLeaves,
+        Material::SpruceLeaves,
+        Material::AcaciaLeaves,
+        Material::DeadBush,
         Material::TallGrass,
         Material::Poppy,
         Material::Dandelion,
@@ -154,7 +158,7 @@ fn real_png_loads_from_pack_prepared_textures_and_direct_roots() {
         let atlas = TextureAtlas::load(Some(&root)).unwrap();
         assert_eq!(
             (atlas.loaded, atlas.fallback, atlas.missing.len()),
-            (1, 16, 16)
+            (1, Material::ALL.len() - 1, Material::ALL.len() - 1)
         );
         assert!(
             layer(&atlas, Material::Stone)

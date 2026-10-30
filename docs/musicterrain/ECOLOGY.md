@@ -8,7 +8,8 @@ and meshes are supplied by the native scene adapter, not this core module.
 ## Surface and plants
 
 `Ecology::biome(x,z,height)` combines height with Horizon's seeded `SimplexNoise`
-to select Meadow, Forest, Alpine or Shore. `surface_profile` returns material-free
+to select ten biomes, including birch forest, taiga, desert, badlands, savanna
+and swamp; see [BIOMES](BIOMES.md) for the climate and material contracts. `surface_profile` returns material-free
 Grass/Dirt, Snow/Stone or Sand layer suggestions. The shared nominal water level
 is 8 blocks. Height means the first air block above terrain, so a decoration's
 anchor Y is exactly the rounded surface height, with no extra floating block.
@@ -64,5 +65,6 @@ a claim that Minecraft region export is implemented.
 whole/tiled queries with shared edge IDs, surface following, water/slope/cave
 avoidance, the default Bass Mountains scene's trees/grass/flowers/entrances,
 column/signed-field agreement, continuity across world cells, bounded requests,
-invalid coordinates and all four surface profiles. Actual consolidated results
+invalid coordinates and surface profiles. Additional biome tests cover all six
+new species/soil contracts, automatic reachability and tiled layout equality. Actual consolidated results
 belong in `TEST_REPORT.md`; this document does not substitute for running them.

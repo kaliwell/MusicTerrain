@@ -16,6 +16,43 @@ pub enum SceneBiome {
     Forest,
     Alpine,
     Shore,
+    BirchForest,
+    Taiga,
+    Desert,
+    Badlands,
+    Savanna,
+    Swamp,
+}
+impl SceneBiome {
+    pub const ALL: [Self; 10] = [
+        Self::Meadow,
+        Self::Forest,
+        Self::Alpine,
+        Self::Shore,
+        Self::BirchForest,
+        Self::Taiga,
+        Self::Desert,
+        Self::Badlands,
+        Self::Savanna,
+        Self::Swamp,
+    ];
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Meadow => "meadow",
+            Self::Forest => "forest",
+            Self::Alpine => "alpine",
+            Self::Shore => "shore",
+            Self::BirchForest => "birch-forest",
+            Self::Taiga => "taiga",
+            Self::Desert => "desert",
+            Self::Badlands => "badlands",
+            Self::Savanna => "savanna",
+            Self::Swamp => "swamp",
+        }
+    }
+    pub fn parse(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|b| b.name() == name)
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceKind {
@@ -24,6 +61,10 @@ pub enum SurfaceKind {
     Stone,
     Sand,
     Snow,
+    RedSand,
+    Terracotta,
+    Podzol,
+    Clay,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SurfaceProfile {
@@ -35,6 +76,11 @@ pub struct SurfaceProfile {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DecorationKind {
     OakTree,
+    BirchTree,
+    SpruceTree,
+    AcaciaTree,
+    Cactus,
+    DeadBush,
     TallGrass,
     Poppy,
     Dandelion,
@@ -85,13 +131,20 @@ impl CaveColumn {
 pub struct Ecology {
     seed: i64,
     climate: SimplexNoise,
+    biome_override: Option<SceneBiome>,
 }
 impl Ecology {
     pub fn new(seed: i64) -> Self {
         Self {
             seed,
+            biome_override: None,
             climate: SimplexNoise::new(&mut LegacyRandom::new(seed ^ 0x4543_4f4c_4f47_5901)),
         }
+    }
+    /// Preview selection; None retains continuous world-coordinate climate sampling.
+    pub fn with_biome(mut self, biome: Option<SceneBiome>) -> Self {
+        self.biome_override = biome;
+        self
     }
     fn hash(&self, x: i32, z: i32, salt: u64) -> u64 {
         // World bounds keep cell coordinates inside signed 24 bits. Preserve both
@@ -107,11 +160,36 @@ impl Ecology {
         if !height.is_finite() || height <= WATER_LEVEL + 1.0 {
             return SceneBiome::Shore;
         }
+        if let Some(biome) = self.biome_override {
+            return biome;
+        }
         let climate = self
             .climate
             .get2(f64::from(x) * 0.011, f64::from(z) * 0.011);
         if height >= 62.0 + climate * 8.0 {
             SceneBiome::Alpine
+        } else if self
+            .climate
+            .get2(f64::from(x) * 0.006 + 137.0, f64::from(z) * 0.006 - 291.0)
+            > 0.38
+        {
+            if climate < -0.2 {
+                SceneBiome::Badlands
+            } else if climate < 0.2 {
+                SceneBiome::Desert
+            } else {
+                SceneBiome::Savanna
+            }
+        } else if self
+            .climate
+            .get2(f64::from(x) * 0.006 + 137.0, f64::from(z) * 0.006 - 291.0)
+            < -0.38
+        {
+            SceneBiome::Taiga
+        } else if climate > 0.55 {
+            SceneBiome::Swamp
+        } else if climate < -0.48 {
+            SceneBiome::BirchForest
         } else if climate > -0.12 {
             SceneBiome::Forest
         } else {
@@ -123,7 +201,14 @@ impl Ecology {
         let (top, subsoil, stone_depth) = match biome {
             SceneBiome::Shore => (SurfaceKind::Sand, SurfaceKind::Sand, 3),
             SceneBiome::Alpine => (SurfaceKind::Snow, SurfaceKind::Stone, 1),
-            SceneBiome::Meadow | SceneBiome::Forest => (SurfaceKind::Grass, SurfaceKind::Dirt, 3),
+            SceneBiome::Desert => (SurfaceKind::Sand, SurfaceKind::Sand, 5),
+            SceneBiome::Badlands => (SurfaceKind::RedSand, SurfaceKind::Terracotta, 12),
+            SceneBiome::Taiga => (SurfaceKind::Podzol, SurfaceKind::Dirt, 3),
+            SceneBiome::Swamp => (SurfaceKind::Grass, SurfaceKind::Clay, 4),
+            SceneBiome::Meadow
+            | SceneBiome::Forest
+            | SceneBiome::BirchForest
+            | SceneBiome::Savanna => (SurfaceKind::Grass, SurfaceKind::Dirt, 3),
         };
         SurfaceProfile {
             biome,
@@ -146,7 +231,9 @@ impl Ecology {
             return None;
         }
         let threshold = match self.biome(x, z, height) {
-            SceneBiome::Forest => 78,
+            SceneBiome::Forest | SceneBiome::BirchForest | SceneBiome::Taiga => 78,
+            SceneBiome::Swamp => 58,
+            SceneBiome::Savanna => 42,
             SceneBiome::Meadow => 32,
             _ => 0,
         };
@@ -165,9 +252,18 @@ impl Ecology {
         }
         Some(WorldDecoration {
             anchor: [x, h, z],
-            kind: DecorationKind::OakTree,
+            kind: match self.biome(x, z, height) {
+                SceneBiome::BirchForest => DecorationKind::BirchTree,
+                SceneBiome::Taiga => DecorationKind::SpruceTree,
+                SceneBiome::Savanna => DecorationKind::AcaciaTree,
+                _ => DecorationKind::OakTree,
+            },
             event_id: id,
-            scale: 4 + ((id >> 32) % 3) as u8,
+            scale: match self.biome(x, z, height) {
+                SceneBiome::Taiga => 8,
+                SceneBiome::BirchForest => 6,
+                _ => 4,
+            } + ((id >> 32) % 3) as u8,
         })
     }
     /// Returns all anchor plants plus trees whose radius-3 crown intersects the region.
@@ -228,6 +324,15 @@ impl Ecology {
                 }
                 let kind = match self.biome(x, z, h) {
                     SceneBiome::Shore => continue,
+                    SceneBiome::Desert | SceneBiome::Badlands => {
+                        if (id >> 24).is_multiple_of(3) {
+                            DecorationKind::Cactus
+                        } else {
+                            DecorationKind::DeadBush
+                        }
+                    }
+                    SceneBiome::Taiga => DecorationKind::Rock,
+                    SceneBiome::Savanna => DecorationKind::TallGrass,
                     SceneBiome::Alpine => {
                         if !(id >> 24).is_multiple_of(4) {
                             continue;
@@ -244,7 +349,11 @@ impl Ecology {
                     anchor: [x, y, z],
                     kind,
                     event_id: id,
-                    scale: 1,
+                    scale: if kind == DecorationKind::Cactus {
+                        2 + ((id >> 32) % 3) as u8
+                    } else {
+                        1
+                    },
                 });
             }
         }

@@ -148,6 +148,7 @@ fn flat_surface_has_only_exterior_faces_and_correct_winding() {
             vegetation: false,
             water: false,
             caves: false,
+            ..SceneOptions::default()
         },
     )
     .unwrap();

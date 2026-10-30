@@ -59,6 +59,7 @@ pub enum Action {
     Vegetation,
     Water,
     Caves,
+    Biome,
 }
 #[derive(Clone)]
 struct Hit {
@@ -706,9 +707,22 @@ impl Ui {
                     Action::Caves,
                     v.scene_options.caves,
                 );
-                text(&mut h, x, 597.0, "TEXTURES", MUTED, 1.0);
+                self.button(
+                    &mut h,
+                    [x, 587.0, sw, 30.0],
+                    &format!(
+                        "BIOME {}",
+                        v.scene_options
+                            .biome
+                            .map_or("AUTO", |b| b.name())
+                            .to_uppercase()
+                    ),
+                    Action::Biome,
+                    false,
+                );
+                text(&mut h, x, 635.0, "TEXTURES", MUTED, 1.0);
                 let source: String = v.texture_info.chars().take(38).collect();
-                text(&mut h, x, 616.0, &source, INK, 1.0);
+                text(&mut h, x, 654.0, &source, INK, 1.0);
             }
             Page::Diagnostics => {
                 let lines = [

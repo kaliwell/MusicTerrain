@@ -2,7 +2,8 @@
 
 Implementation began 2026-10-29; final verification continued 2026-10-30 (UTC).
 Baseline: `62a23ba0258a89e7a69b513f333c6c19d05e6594`.
-Branch: `feature/music-terrain`. No remote push or pull request was created.
+Branch: `feature/music-terrain`. Code was subsequently uploaded to the user-owned
+`kaliwell/MusicTerrain` repository with authorization; no upstream PR was created.
 
 ## Environment
 
@@ -158,3 +159,25 @@ These checks use the explicit silent diagnostic clock and CPU software Vulkan.
 They do not establish audible hardware output or target-GPU/Windows performance.
 Material volumes/decorations remain preview-only; the heightmap analysis export
 is unchanged and no Minecraft world persistence/collision/fluid simulation is claimed.
+
+## Biome update verification — 2026-10-30 UTC
+
+- `cargo test -p musicterrain`: **63 passed**, none ignored: 8 unit, 9 audio,
+  5 CLI, 9 ecology, 6 materials, 6 scene mesh and 7 visual plus 13 terrain.
+- `cargo test -p musicterrain --no-default-features`: **42 passed**.
+- `cargo clippy -p musicterrain --all-targets -- -D warnings`,
+  `cargo fmt --all --check`, `cargo build -p musicterrain`, public-tree scan
+  and `git diff --check`: passed.
+- Added real tests for all lowland climate types, six species/soil contracts,
+  per-biome tile/halo equality, actual mesh material layers and reproducible hashes.
+  The local-pack fixture now checks fallback counts against the expanded atlas;
+  the original IDs and image/alpha checks are retained.
+- Actual X11 editor interaction with `--scene --biomes`: exit 0, 34 editor
+  events, 37 distinct uploaded meshes. Clicked all ten biomes and restored Auto,
+  captured each, verified scene switches, pause, seek, undo/redo and save/load.
+- Actual CLI `--biome desert`: 30-frame offscreen run and PNG succeeded;
+  invalid biome rejected before creating a window. Same isolated homes,
+  explicit silent diagnostic clock and CPU Vulkan environment as above.
+- [Screenshots and biome contracts](BIOMES.md). Raw output:
+  [verification/biomes](verification/biomes/). No hardware GPU/audio, Windows,
+  collision or persistent-world functionality is claimed by these checks.

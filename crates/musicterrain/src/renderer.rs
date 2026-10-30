@@ -30,9 +30,9 @@ impl PreviewRenderer {
     ) -> Result<Self, Box<dyn Error>> {
         let atlas = TextureAtlas::load(resources)?;
         let texture_info = if atlas.loaded == 0 {
-            "ORIGINAL MATERIALS: 17".to_owned()
+            format!("ORIGINAL MATERIALS: {}", atlas.layers)
         } else {
-            format!("LOCAL PACK {}/17 + FALLBACK", atlas.loaded)
+            format!("LOCAL PACK {}/{} + FALLBACK", atlas.loaded, atlas.layers)
         };
         let layer_bytes = (atlas.size * atlas.size * 4) as usize;
         let mips: Vec<_> = atlas

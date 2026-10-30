@@ -528,6 +528,19 @@ impl App {
                 self.revision.0 = self.revision.0.wrapping_add(1);
                 self.dirty = true;
             }
+            Action::Biome => {
+                use crate::ecology::SceneBiome;
+                self.options.scene_options.biome = match self.options.scene_options.biome {
+                    None => Some(SceneBiome::ALL[0]),
+                    Some(b) => SceneBiome::ALL
+                        .iter()
+                        .position(|v| *v == b)
+                        .and_then(|i| SceneBiome::ALL.get(i + 1))
+                        .copied(),
+                };
+                self.revision.0 = self.revision.0.wrapping_add(1);
+                self.dirty = true;
+            }
             Action::Caves => {
                 self.options.scene_options.caves = !self.options.scene_options.caves;
                 self.revision.0 = self.revision.0.wrapping_add(1);
