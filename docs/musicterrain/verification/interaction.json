@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "pause_stopped_mesh_updates": true,
+  "save_preserved_existing_preset": true,
+  "events": 15,
+  "distinct_mesh_hashes": 19,
+  "screenshots": [
+    "noise-lab.png",
+    "wave-terrain.png",
+    "floating-islands.png",
+    "mapping-editor.png",
+    "diagnostics.png"
+  ],
+  "clock": "explicit silent diagnostic clock"
+}

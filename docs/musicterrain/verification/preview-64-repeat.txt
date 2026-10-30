@@ -1,0 +1,68 @@
+2026-10-30T00:42:18.895425Z  INFO session started session_id=000000000000000018e327e47b12a9d9-00001012 file_logging=true
+2026-10-30T00:42:19.670032Z  INFO Horizon preview renderer ready adapter=llvmpipe (LLVM 19.1.7, 256 bits) backend=Vulkan device_type=Cpu
+2026-10-30T00:42:19.670393Z  INFO parameter snapshot changed revision=2 preset_version=1 seed=42
+2026-10-30T00:42:19.784851Z  INFO preview mesh uploaded mesh_hash=5745985324201305692 audio_time=0.002992758 generation_ms=29.992807388305664 revision=2
+2026-10-30T00:42:19.910530Z  INFO preview mesh uploaded mesh_hash=8550538723867603021 audio_time=0.105771563 generation_ms=28.274818420410156 revision=2
+2026-10-30T00:42:19.981726Z  INFO preview mesh uploaded mesh_hash=16264431065973261684 audio_time=0.237877952 generation_ms=22.1965389251709 revision=2
+2026-10-30T00:42:20.069143Z  INFO preview mesh uploaded mesh_hash=17642435923425913229 audio_time=0.310723206 generation_ms=15.970712661743164 revision=2
+2026-10-30T00:42:20.132533Z  INFO preview mesh uploaded mesh_hash=18119328410585335413 audio_time=0.396947128 generation_ms=27.038331985473633 revision=2
+2026-10-30T00:42:20.345264Z  INFO preview mesh uploaded mesh_hash=11183562504055437993 audio_time=0.57132792 generation_ms=20.074731826782227 revision=2
+2026-10-30T00:42:20.369906Z  INFO preview mesh uploaded mesh_hash=1678213436048098714 audio_time=0.672905897 generation_ms=14.349987030029297 revision=2
+2026-10-30T00:42:20.538583Z  INFO preview mesh uploaded mesh_hash=11292717035515701741 audio_time=0.749768299 generation_ms=17.542308807373047 revision=2
+2026-10-30T00:42:20.652824Z  INFO preview mesh uploaded mesh_hash=7828860204495639750 audio_time=0.867756237 generation_ms=29.380674362182617 revision=2
+2026-10-30T00:42:20.689152Z  INFO preview performance frame_ms_mean=59.07533164705882 frame_ms_max=117.987621 fps=16.92753933188942 frames=17 queued_jobs=0 busy=true generation_ms=29.380674362182617 upload_ms=0.4543910026550293 audio_time=1.018613955 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:20.748013Z  INFO preview mesh uploaded mesh_hash=13922419583029938085 audio_time=0.98196152 generation_ms=72.98078155517578 revision=2
+2026-10-30T00:42:20.836438Z  INFO preview mesh uploaded mesh_hash=2182597519277497335 audio_time=1.07698519 generation_ms=73.74369812011719 revision=2
+2026-10-30T00:42:20.987442Z  INFO preview mesh uploaded mesh_hash=734828798107206010 audio_time=1.177457162 generation_ms=133.97569274902344 revision=2
+2026-10-30T00:42:21.095152Z  INFO preview mesh uploaded mesh_hash=181135846915842658 audio_time=1.309865114 generation_ms=36.73044967651367 revision=2
+2026-10-30T00:42:21.207860Z  INFO preview mesh uploaded mesh_hash=10623862722286121990 audio_time=1.42975656 generation_ms=55.47679138183594 revision=2
+2026-10-30T00:42:21.307530Z  INFO preview mesh uploaded mesh_hash=10603987734642981612 audio_time=1.536730632 generation_ms=74.52957153320313 revision=2
+2026-10-30T00:42:21.414656Z  INFO preview mesh uploaded mesh_hash=5404206251221150342 audio_time=1.636657145 generation_ms=73.42061614990234 revision=2
+2026-10-30T00:42:21.617327Z  INFO preview mesh uploaded mesh_hash=3134456129310749070 audio_time=1.743134288 generation_ms=82.35184478759766 revision=2
+2026-10-30T00:42:21.732422Z  INFO preview mesh uploaded mesh_hash=17353531464723946065 audio_time=1.9464590579999999 generation_ms=68.19187927246094 revision=2
+2026-10-30T00:42:21.733016Z  INFO preview performance frame_ms_mean=65.18761462500001 frame_ms_max=193.80224700000002 fps=15.340337359368439 frames=16 queued_jobs=0 busy=true generation_ms=68.19187927246094 upload_ms=0.39261600375175476 audio_time=2.061616337 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:21.820287Z  INFO preview mesh uploaded mesh_hash=3700362076172975667 audio_time=2.061616337 generation_ms=30.1295223236084 revision=2
+2026-10-30T00:42:21.928794Z  INFO preview mesh uploaded mesh_hash=14473599660195400552 audio_time=2.147211019 generation_ms=33.113643646240234 revision=2
+2026-10-30T00:42:22.081094Z  INFO preview mesh uploaded mesh_hash=14455163180017061365 audio_time=2.257862301 generation_ms=20.493499755859375 revision=2
+2026-10-30T00:42:22.204607Z  INFO preview mesh uploaded mesh_hash=12464233631691066965 audio_time=2.408805193 generation_ms=15.945490837097168 revision=2
+2026-10-30T00:42:22.309619Z  INFO preview mesh uploaded mesh_hash=17821060155948483989 audio_time=2.533736272 generation_ms=21.671781539916992 revision=2
+2026-10-30T00:42:22.425871Z  INFO preview mesh uploaded mesh_hash=8200614072923241980 audio_time=2.638118577 generation_ms=77.08047485351563 revision=2
+2026-10-30T00:42:22.604512Z  INFO preview mesh uploaded mesh_hash=13568315274998229176 audio_time=2.754188135 generation_ms=77.09272766113281 revision=2
+2026-10-30T00:42:22.715034Z  INFO preview mesh uploaded mesh_hash=16270057250773138035 audio_time=2.933664418 generation_ms=90.01688385009766 revision=2
+2026-10-30T00:42:22.808604Z  INFO preview mesh uploaded mesh_hash=7866012028904412030 audio_time=3.044116877 generation_ms=68.22091674804688 revision=2
+2026-10-30T00:42:22.808818Z  INFO preview performance frame_ms_mean=59.76196105555555 frame_ms_max=172.023866 fps=16.733051967126478 frames=18 queued_jobs=0 busy=false generation_ms=68.22091674804688 upload_ms=0.8703530430793762 audio_time=3.137332048 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:22.912806Z  INFO preview mesh uploaded mesh_hash=1926570471127710964 audio_time=3.145257635 generation_ms=30.28746795654297 revision=2
+2026-10-30T00:42:23.016586Z  INFO preview mesh uploaded mesh_hash=984412452536698116 audio_time=3.2416000130000002 generation_ms=44.86093521118164 revision=2
+2026-10-30T00:42:23.054492Z  INFO preview mesh uploaded mesh_hash=9918401252993415846 audio_time=3.345632085 generation_ms=28.447032928466797 revision=2
+2026-10-30T00:42:23.238378Z  INFO preview mesh uploaded mesh_hash=16411911426017023154 audio_time=3.457063468 generation_ms=82.36520385742188 revision=2
+2026-10-30T00:42:23.324851Z  INFO preview mesh uploaded mesh_hash=8210387171165932249 audio_time=3.567575748 generation_ms=53.75313186645508 revision=2
+2026-10-30T00:42:23.442516Z  INFO preview mesh uploaded mesh_hash=13490838039843386852 audio_time=3.661567922 generation_ms=61.90180969238281 revision=2
+2026-10-30T00:42:23.528227Z  INFO preview mesh uploaded mesh_hash=6904446284552145398 audio_time=3.765613862 generation_ms=60.806884765625 revision=2
+2026-10-30T00:42:23.625921Z  INFO preview mesh uploaded mesh_hash=993067400076128918 audio_time=3.8573985090000003 generation_ms=21.43727684020996 revision=2
+2026-10-30T00:42:23.709881Z  INFO preview mesh uploaded mesh_hash=12536130114468214131 audio_time=3.955051099 generation_ms=31.980697631835938 revision=2
+2026-10-30T00:42:23.804221Z  INFO preview mesh uploaded mesh_hash=5088640392232761903 audio_time=4.039054794 generation_ms=75.47032165527344 revision=2
+2026-10-30T00:42:23.836126Z  INFO preview mesh uploaded mesh_hash=3477600421548017407 audio_time=4.133166048 generation_ms=30.02267074584961 revision=2
+2026-10-30T00:42:23.836613Z  INFO preview performance frame_ms_mean=46.695854227272726 frame_ms_max=105.919346 fps=21.415177354565873 frames=22 queued_jobs=0 busy=false generation_ms=30.02267074584961 upload_ms=1.0862109661102295 audio_time=4.164640118 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:24.015230Z  INFO preview mesh uploaded mesh_hash=16739811868071423510 audio_time=4.259710313 generation_ms=50.0572395324707 revision=2
+2026-10-30T00:42:24.080085Z  INFO preview mesh uploaded mesh_hash=5629052000990094910 audio_time=4.34424526 generation_ms=24.506248474121094 revision=2
+2026-10-30T00:42:24.243641Z  INFO preview mesh uploaded mesh_hash=7817442627401495044 audio_time=4.463355881 generation_ms=80.06315612792969 revision=2
+2026-10-30T00:42:24.337933Z  INFO preview mesh uploaded mesh_hash=6149056268529816724 audio_time=4.571326171 generation_ms=55.785057067871094 revision=2
+2026-10-30T00:42:24.434374Z  INFO preview mesh uploaded mesh_hash=7606758951772246590 audio_time=4.671425644 generation_ms=63.393489837646484 revision=2
+2026-10-30T00:42:24.504710Z  INFO preview mesh uploaded mesh_hash=6957713624926978645 audio_time=4.763398792 generation_ms=51.48040771484375 revision=2
+2026-10-30T00:42:24.594178Z  INFO preview mesh uploaded mesh_hash=7331117815429724425 audio_time=4.842988706 generation_ms=27.758838653564453 revision=2
+2026-10-30T00:42:24.679412Z  INFO preview mesh uploaded mesh_hash=15717970379834536792 audio_time=4.923268396 generation_ms=30.728351593017578 revision=2
+2026-10-30T00:42:24.740331Z  INFO preview mesh uploaded mesh_hash=6590827058152381948 audio_time=5.008630847 generation_ms=36.374691009521484 revision=2
+2026-10-30T00:42:24.826357Z  INFO preview mesh uploaded mesh_hash=17814595540392142424 audio_time=5.077326785 generation_ms=57.360477447509766 revision=2
+2026-10-30T00:42:24.836628Z  INFO preview performance frame_ms_mean=43.54479891304347 frame_ms_max=100.764555 fps=22.964855159784843 frames=23 queued_jobs=0 busy=true generation_ms=57.360477447509766 upload_ms=2.088905096054077 audio_time=5.166169587 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:24.937649Z  INFO preview mesh uploaded mesh_hash=4263685522704904924 audio_time=5.153849063 generation_ms=23.771350860595703 revision=2
+2026-10-30T00:42:25.023192Z  INFO preview mesh uploaded mesh_hash=1509696204928307404 audio_time=5.26635217 generation_ms=53.29866409301758 revision=2
+2026-10-30T00:42:25.116396Z  INFO preview mesh uploaded mesh_hash=1084963483354819537 audio_time=5.351684858 generation_ms=63.46493148803711 revision=2
+2026-10-30T00:42:25.210799Z  INFO preview mesh uploaded mesh_hash=13553206979933546601 audio_time=5.439768903 generation_ms=15.679640769958496 revision=2
+2026-10-30T00:42:25.299710Z  INFO preview mesh uploaded mesh_hash=9065684000632645964 audio_time=5.5398568820000005 generation_ms=24.06067657470703 revision=2
+2026-10-30T00:42:25.393132Z  INFO preview mesh uploaded mesh_hash=6979104066961509818 audio_time=5.627918619 generation_ms=23.368144989013672 revision=2
+2026-10-30T00:42:25.486454Z  INFO preview mesh uploaded mesh_hash=7605455467858490646 audio_time=5.722185292 generation_ms=27.377492904663086 revision=2
+2026-10-30T00:42:25.517001Z  INFO preview mesh uploaded mesh_hash=12562371293696987439 audio_time=5.815615189 generation_ms=29.666358947753906 revision=2
+2026-10-30T00:42:25.645154Z  INFO preview mesh uploaded mesh_hash=4321944745857666507 audio_time=5.923020352 generation_ms=24.075326919555664 revision=2
+2026-10-30T00:42:25.745635Z  INFO preview mesh uploaded mesh_hash=2901288958683468752 audio_time=6.016032345 generation_ms=34.56690979003906 revision=2
+2026-10-30T00:42:25.846573Z  INFO preview performance frame_ms_mean=45.90461154545455 frame_ms_max=100.181304 fps=21.78430371880621 frames=22 queued_jobs=0 busy=true generation_ms=34.56690979003906 upload_ms=0.43221500515937805 audio_time=6.176072863 revision=2 startup_frames_skipped=2
+2026-10-30T00:42:26.872561Z  INFO preview smoke completed frames=121 meshes=58 distinct_meshes=32 elapsed=7.9547885019999995

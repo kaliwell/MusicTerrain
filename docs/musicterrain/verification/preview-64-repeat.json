@@ -1,0 +1,70 @@
+{
+  "performance_samples": [
+    {
+      "frame_ms_mean": 59.07533164705882,
+      "frame_ms_max": 117.987621,
+      "fps": 16.92753933188942,
+      "queued_jobs": 0.0,
+      "generation_ms": 29.380674362182617,
+      "upload_ms": 0.4543910026550293
+    },
+    {
+      "frame_ms_mean": 65.18761462500001,
+      "frame_ms_max": 193.80224700000002,
+      "fps": 15.340337359368439,
+      "queued_jobs": 0.0,
+      "generation_ms": 68.19187927246094,
+      "upload_ms": 0.39261600375175476
+    },
+    {
+      "frame_ms_mean": 59.76196105555555,
+      "frame_ms_max": 172.023866,
+      "fps": 16.733051967126478,
+      "queued_jobs": 0.0,
+      "generation_ms": 68.22091674804688,
+      "upload_ms": 0.8703530430793762
+    },
+    {
+      "frame_ms_mean": 46.695854227272726,
+      "frame_ms_max": 105.919346,
+      "fps": 21.415177354565873,
+      "queued_jobs": 0.0,
+      "generation_ms": 30.02267074584961,
+      "upload_ms": 1.0862109661102295
+    },
+    {
+      "frame_ms_mean": 43.54479891304347,
+      "frame_ms_max": 100.764555,
+      "fps": 22.964855159784843,
+      "queued_jobs": 0.0,
+      "generation_ms": 57.360477447509766,
+      "upload_ms": 2.088905096054077
+    },
+    {
+      "frame_ms_mean": 45.90461154545455,
+      "frame_ms_max": 100.181304,
+      "fps": 21.78430371880621,
+      "queued_jobs": 0.0,
+      "generation_ms": 34.56690979003906,
+      "upload_ms": 0.43221500515937805
+    }
+  ],
+  "exit_code": 0,
+  "wall_seconds": 8.088249962999953,
+  "peak_rss_kib_sampled": 200772,
+  "distinct_mesh_hashes": 58,
+  "mesh_updates": 58,
+  "mesh_mean_ms": 45.56096240878105,
+  "mesh_max_ms": 133.97569274902344,
+  "extent": 64,
+  "resolution": [
+    1280,
+    800
+  ],
+  "audio": "synthesized12s",
+  "clock": "explicit silent software clock",
+  "graphics": "software Vulkan requested",
+  "build_binary": "/workspace/horizon/target/debug/musicterrain",
+  "screenshot": "preview.png",
+  "completion_log": "frames=121 meshes=58 distinct_meshes=32 elapsed=7.9547885019999995"
+}

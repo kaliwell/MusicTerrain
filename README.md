@@ -1,3 +1,37 @@
+# MusicTerrain × Horizon
+
+音乐驱动的原生 Rust 体素地形编辑器，基于 [Horizon](https://github.com/horizon-rust/horizon)。
+复用 Horizon 的噪声、区块网格格式、相机和 wgpu 渲染器。
+
+![MusicTerrain 原生预览](docs/musicterrain/images/demo.png)
+
+当前已实现可交互 demo：WAV / MP3 / FLAC 导入、FFT 与频段映射、音乐驱动
+三维地形、Noise Lab、映射编辑、七个预设、参数撤销重做及性能诊断。
+独立预览无需 Minecraft 专有资源。
+
+```sh
+cargo run -p musicterrain -- demo
+cargo run -p musicterrain -- preview --audio /path/to/song.wav
+```
+
+[完整运行说明](docs/musicterrain/README.md) ·
+[测试报告](docs/musicterrain/TEST_REPORT.md) ·
+[性能实测](docs/musicterrain/PERFORMANCE.md) ·
+[当前限制](docs/musicterrain/KNOWN_ISSUES.md)
+
+MusicTerrain 测试 42 项通过，格式、Clippy 和构建通过。
+原生画面已在 Linux 软件 Vulkan 上验证；实体音频设备和 Windows 尚待实机验收。
+Horizon 游戏菜单接入、系统声音采集和 Minecraft 世界存档导出尚未实现。
+
+本仓库保留 Horizon 的源码、开发历史及 [MIT 许可证](LICENSE)。
+上游基线：`62a23ba0258a89e7a69b513f333c6c19d05e6594`；
+MusicTerrain 改动及接入依据见 [源码审计](docs/musicterrain/SOURCE_AUDIT.md)。
+请勿提交 Minecraft 专有资源、个人音乐、凭据或构建产物。
+
+---
+
+下方保留 Horizon 上游的原始项目说明。
+
 <p align="center">
   <img src="docs/media/banner.webp" alt="Horizon: Minecraft: Java Edition 26.3, rewritten in Rust and checked against vanilla by more than 300 differential harnesses" width="100%">
 </p>

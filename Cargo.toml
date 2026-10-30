@@ -1,6 +1,7 @@
 [workspace]
 exclude = ["launcher", "crates/horizon-telemetry-server", "crates/horizon-mod-registry", "third_party/wgpu-hal"]
 members = [
+    "crates/musicterrain",
     "crates/horizon-core",
     "crates/horizon-dualsense",
     "crates/horizon-threads",
@@ -84,3 +85,11 @@ inherits = "release"
 lto = false
 codegen-units = 16
 incremental = true
+
+# MusicTerrain samples the shared noise kernel thousands of times per preview.
+# Keep debug assertions/line tables while avoiding debug-mode DSP/noise stalls.
+[profile.dev.package.musicterrain]
+opt-level = 2
+
+[profile.dev.package.horizon-core]
+opt-level = 2

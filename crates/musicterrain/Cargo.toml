@@ -1,0 +1,32 @@
+[package]
+name = "musicterrain"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version = "1.90"
+description = "Opt-in music driven terrain and Noise Lab using Horizon"
+
+[features]
+default = ["native", "audio-output"]
+native = ["dep:horizon-client-render", "dep:horizon-theme", "dep:winit", "dep:glam", "dep:pollster"]
+audio-output = ["dep:cpal"]
+
+[dependencies]
+horizon-core = { path = "../horizon-core" }
+horizon-client-render = { path = "../horizon-client-render", optional = true }
+horizon-theme = { path = "../horizon-theme", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10.9"
+thiserror = "2"
+symphonia = { version = "0.5", default-features = false, features = ["mp3", "wav", "pcm", "flac", "ogg", "vorbis"] }
+rustfft = "6.4"
+cpal = { version = "0.16", optional = true }
+winit = { version = "0.30.13", optional = true }
+glam = { version = "0.30", optional = true }
+pollster = { version = "0.4", optional = true }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true

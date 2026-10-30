@@ -1,0 +1,38 @@
+{
+  "performance_samples": [
+    {
+      "frame_ms_mean": 58.047682499999986,
+      "frame_ms_max": 154.107132,
+      "fps": 17.227216607656988,
+      "queued_jobs": 0.0,
+      "generation_ms": 30.639848709106445,
+      "upload_ms": 6.7381272315979
+    },
+    {
+      "frame_ms_mean": 82.68552057142857,
+      "frame_ms_max": 291.776636,
+      "fps": 12.094015894066262,
+      "queued_jobs": 0.0,
+      "generation_ms": 62.429054260253906,
+      "upload_ms": 5.226746082305908
+    }
+  ],
+  "exit_code": 0,
+  "wall_seconds": 6.841660685000022,
+  "peak_rss_kib_sampled": 193904,
+  "distinct_mesh_hashes": 20,
+  "mesh_updates": 20,
+  "mesh_mean_ms": 38.492106437683105,
+  "mesh_max_ms": 95.72108459472656,
+  "extent": 128,
+  "resolution": [
+    1280,
+    800
+  ],
+  "audio": "synthesized12s",
+  "clock": "explicit silent software clock",
+  "graphics": "software Vulkan requested",
+  "build_binary": "/workspace/horizon/target/debug/musicterrain",
+  "screenshot": "preview.png",
+  "completion_log": "frames=41 meshes=20 distinct_meshes=20 elapsed=6.694502407"
+}

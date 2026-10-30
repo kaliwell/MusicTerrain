@@ -1,0 +1,54 @@
+{
+  "performance_samples": [
+    {
+      "frame_ms_mean": 38.13570788888888,
+      "frame_ms_max": 107.716962,
+      "fps": 26.222143375798126,
+      "queued_jobs": 0.0,
+      "generation_ms": 16.07137680053711,
+      "upload_ms": 1.1852229833602905
+    },
+    {
+      "frame_ms_mean": 30.155586647058826,
+      "frame_ms_max": 74.197022,
+      "fps": 33.16135121839964,
+      "queued_jobs": 0.0,
+      "generation_ms": 32.0106201171875,
+      "upload_ms": 0.48712900280952454
+    },
+    {
+      "frame_ms_mean": 42.03928154166666,
+      "frame_ms_max": 129.963347,
+      "fps": 23.787276169524056,
+      "queued_jobs": 0.0,
+      "generation_ms": 15.592289924621582,
+      "upload_ms": 2.1759538650512695
+    },
+    {
+      "frame_ms_mean": 30.346829303030304,
+      "frame_ms_max": 64.215542,
+      "fps": 32.95237172933069,
+      "queued_jobs": 0.0,
+      "generation_ms": 22.59503173828125,
+      "upload_ms": 0.7420880198478699
+    }
+  ],
+  "exit_code": 0,
+  "wall_seconds": 6.026526618999981,
+  "peak_rss_kib_sampled": 200672,
+  "distinct_mesh_hashes": 42,
+  "mesh_updates": 42,
+  "mesh_mean_ms": 19.295754100965418,
+  "mesh_max_ms": 32.0106201171875,
+  "extent": 64,
+  "resolution": [
+    1280,
+    800
+  ],
+  "audio": "synthesized12s",
+  "clock": "explicit silent software clock",
+  "graphics": "software Vulkan requested",
+  "build_binary": "/workspace/horizon/target/debug/musicterrain",
+  "screenshot": "preview.png",
+  "completion_log": "frames=121 meshes=42 distinct_meshes=32 elapsed=5.902346974"
+}
