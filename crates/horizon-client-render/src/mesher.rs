@@ -155,6 +155,17 @@ impl Default for SectionMesh {
     }
 }
 impl SectionMesh {
+    /// Content identity for preview clients that retain unchanged GPU sections.
+    /// Includes UVs, lighting and transparency partition, not just positions.
+    pub fn fingerprint(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        bytemuck::cast_slice::<TerrainVertex, u8>(&self.solid).hash(&mut hash);
+        bytemuck::cast_slice::<TerrainVertex, u8>(&self.translucent).hash(&mut hash);
+        self.visibility.hash(&mut hash);
+        self.block_entities.hash(&mut hash);
+        hash.finish()
+    }
     /// Sorts the solid quads by the side they face, for the renderer to
     /// leave out those facing away from the eye (`sides`).
     pub fn sort_solid(&mut self) {
@@ -913,4 +924,27 @@ impl Mesher<'_> {
 pub type Region = [[Option<Arc<Chunk>>; 3]; 3];
 pub fn borrow(region: &Region) -> [[Option<&Chunk>; 3]; 3] {
     std::array::from_fn(|z| std::array::from_fn(|x| region[z][x].as_deref()))
+}
+
+#[cfg(test)]
+mod fingerprint_tests {
+    use super::*;
+    #[test]
+    fn identity_includes_uv_light_and_transparency_partition() {
+        let vertex = TerrainVertex::new([0.0; 3], [0.0; 2], 1, 0xff112233, 0xf0f0);
+        let mut mesh = SectionMesh {
+            solid: vec![vertex; 4],
+            ..Default::default()
+        };
+        let original = mesh.fingerprint();
+        assert_eq!(original, mesh.fingerprint());
+        mesh.solid[0].uv[0] = 1;
+        assert_ne!(original, mesh.fingerprint());
+        mesh.solid[0] = vertex;
+        mesh.solid[0].light = 0;
+        assert_ne!(original, mesh.fingerprint());
+        mesh.solid[0] = vertex;
+        mesh.translucent = std::mem::take(&mut mesh.solid);
+        assert_ne!(original, mesh.fingerprint());
+    }
 }

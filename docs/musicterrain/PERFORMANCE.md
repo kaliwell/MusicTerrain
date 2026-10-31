@@ -1,5 +1,46 @@
 # MusicTerrain performance measurements
 
+## Windows full-detail optimization (2026-10-31)
+
+Full-detail volumes now store each vertical column contiguously. At 128/256,
+column filling and mesh emission each use up to four scoped workers, with
+immutable shared samplers and disjoint mutable column slices. Work is still one
+bounded preview job; cancellation and configuration revisions remain enforced.
+Parallel mesh stripes are merged in serial order and sorted on the mesh worker.
+
+Completed sections are fingerprinted off the UI thread, including packed vertex
+UVs, light, material colors, opaque/translucent partition and section metadata.
+The preview uploads changed sections and clears disappeared sections, retaining
+unchanged GPU meshes. It no longer removes every old column on each update.
+Surface view skips the redundant full-volume cutaway pass.
+
+These changes preserve one-block sampling. New regressions compare serial and
+parallel material/carved/surface arrays and complete section fingerprints.
+This improves actual CPU work rather than adding vertex interpolation.
+
+Measured on the RTX 3050 Laptop GPU, Vulkan, normal 1280x800 window with VSync:
+Bass Mountains, seed 42, synthesized 12-second clip, square footprint, all default
+scene features, **Full Detail (one-block voxels)**. Each extent ran 901 frames
+before/after with no concurrent compilation. Values below are medians of the
+available one-second reports, using the application's two-frame startup exclusion.
+
+| Extent | Mesh generation ms, before → after | Actual terrain updates/s, before → after | Frame interval p99 ms, before → after |
+| --- | ---: | ---: | ---: |
+| 128 | 58.797 → 33.014 | 13.452 → 20.934 | 8.120 → 8.229 |
+| 256 | 260.936 → 169.654 | 3.000 → 4.970 | 15.180 → 14.237 |
+
+Display FPS stayed approximately 144 in both versions. These are terrain-update
+improvements, not a claimed doubling of display FPS. GPU upload medians were
+1.347 → 1.177 ms at 128 and 5.023 → 5.307 ms at 256; this animated scene changes
+many sections, so GPU reuse alone does not eliminate upload spikes. Full-detail
+256 remains expensive and is not a 60 Hz terrain animation claim. These short
+runs do not establish sustained performance or end-to-end live capture latency.
+
+105 MusicTerrain tests, the renderer fingerprint regression, denied-warning
+Clippy and the optimized build passed. Raw local evidence:
+`run/validation/full-detail-comparison.json`, `terrain-before.json`,
+`terrain-after.json`, `full-perf-tests.log`, `fingerprint-tests.log`.
+
 ## Environment and limits
 
 Initial inspection on 2026-10-29 found a Linux container with no `/dev/dri` GPU

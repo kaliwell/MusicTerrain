@@ -51,6 +51,9 @@ default audio device changes, turn capture off and on again.
   Full detail (default) keeps one-block voxels at 64/128/256 extents. Adaptive detail
   is optional for performance. Above the scene, cycle Square / Cylinder / Hexagon /
   Diamond and Full / Adaptive. Larger full-detail scenes take longer to generate.
+  At 128/256, voxel filling and mesh emission use up to four CPU workers. Identical
+  GPU sections are retained between updates; one-block geometry and textures are
+  preserved. Camera FPS and terrain update frequency remain separate measurements.
 - Diagnostics reports actual worker, renderer and upload metrics. GPU copy
   submission time is distinguished from GPU execution time.
 

@@ -99,6 +99,7 @@ pub struct MeshResult {
     /// Adaptive horizontal step. Density preview also uses this step vertically.
     pub voxel_step: u32,
     pub scene: SceneStats,
+    pub section_hashes: BTreeMap<SectionKey, u64>,
     cache_key: CacheKey,
 }
 #[derive(Clone)]
@@ -298,7 +299,7 @@ fn generate_mesh(
     snapshot: &TerrainSnapshot,
     size: u32,
     options: SceneOptions,
-    cancelled: impl Fn() -> bool,
+    cancelled: impl Fn() -> bool + Sync,
 ) -> Option<MeshResult> {
     if !valid_size(size)
         || snapshot.parameters.validate().is_err()
@@ -393,7 +394,58 @@ fn generate_mesh(
         .filter(|m| **m != 0 && **m != encode(Material::Water))
         .count() as u32;
     builder.scene.carved_voxels = volume.carved.iter().filter(|v| **v).count() as u32;
-    volume.mesh(&mut builder, &cancelled)?;
+    let threads = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(4);
+    if size >= 128 && threads > 1 {
+        let stripes = volume.n.div_ceil(threads);
+        let parts = std::thread::scope(|scope| {
+            let jobs: Vec<_> = (0..volume.n)
+                .step_by(stripes)
+                .map(|start| {
+                    let volume = &volume;
+                    let cancelled = &cancelled;
+                    scope.spawn(move || {
+                        let mut part = MeshBuilder::new(snapshot);
+                        volume.mesh_rows(
+                            &mut part,
+                            cancelled,
+                            start..(start + stripes).min(volume.n),
+                        )?;
+                        Some(part)
+                    })
+                })
+                .collect();
+            jobs.into_iter()
+                .map(|job| job.join().ok().flatten())
+                .collect::<Option<Vec<_>>>()
+        })?;
+        for part in parts {
+            builder.scene.cave_faces += part.scene.cave_faces;
+            builder.scene.water_quads += part.scene.water_quads;
+            for (a, b) in builder
+                .scene
+                .material_quads
+                .iter_mut()
+                .zip(part.scene.material_quads)
+            {
+                *a += b;
+            }
+            for (key, mesh) in part.sections {
+                match builder.sections.entry(key) {
+                    std::collections::btree_map::Entry::Vacant(entry) => {
+                        entry.insert(mesh);
+                    }
+                    std::collections::btree_map::Entry::Occupied(mut entry) => {
+                        entry.get_mut().solid.extend(mesh.solid);
+                        entry.get_mut().translucent.extend(mesh.translucent);
+                    }
+                }
+            }
+        }
+    } else {
+        volume.mesh(&mut builder, &cancelled)?;
+    }
     if options.vegetation && options.underground_view != UndergroundView::Underground {
         decorations(
             &mut builder,
@@ -452,9 +504,8 @@ fn generate_mesh(
         .values()
         .map(|s| s.solid.len() + s.translucent.len())
         .sum();
-    let checksum = builder.checksum;
     let scene = builder.scene;
-    let sections = builder
+    let sections: Vec<_> = builder
         .sections
         .into_iter()
         .map(|(key, mut mesh)| {
@@ -462,7 +513,16 @@ fn generate_mesh(
             (key, mesh)
         })
         .collect();
+    use std::hash::{Hash, Hasher};
+    let section_hashes: BTreeMap<_, _> = sections
+        .iter()
+        .map(|(key, mesh)| (*key, mesh.fingerprint()))
+        .collect();
+    let mut identity = std::collections::hash_map::DefaultHasher::new();
+    section_hashes.hash(&mut identity);
+    let checksum = identity.finish();
     Some(MeshResult {
+        section_hashes,
         revision: snapshot.revision,
         sections,
         generation_ms: start.elapsed().as_secs_f32() * 1000.0,
@@ -534,6 +594,78 @@ mod preview_regressions {
             villages: VillageMode::Off,
             mines: MineMode::Off,
             ..Default::default()
+        }
+    }
+    #[test]
+    fn parallel_fill_preserves_every_material_cave_and_surface_sample() {
+        let mut request = flat(40.0);
+        request.parameters.cave_w = 1.25;
+        request.parameters.cave_threshold = 0.197;
+        let field = TerrainField::new(request.seed);
+        let ecology = Ecology::new(request.seed);
+        let options = SceneOptions {
+            shape: TerrainShape::Cylinder,
+            ..bare()
+        };
+        for (density, step) in [(false, 1), (true, 4)] {
+            let serial = Volume::generate_with_workers(
+                &request,
+                &field,
+                &ecology,
+                128,
+                step,
+                density,
+                options,
+                &|| false,
+                1,
+            )
+            .unwrap();
+            let parallel = Volume::generate_with_workers(
+                &request,
+                &field,
+                &ecology,
+                128,
+                step,
+                density,
+                options,
+                &|| false,
+                4,
+            )
+            .unwrap();
+            assert_eq!(parallel.cells, serial.cells);
+            assert_eq!(parallel.carved, serial.carved);
+            assert_eq!(parallel.surfaces, serial.surfaces);
+        }
+    }
+    #[test]
+    fn parallel_full_detail_mesh_matches_serial_vertices_uvs_and_cave_shading() {
+        let mut request = flat(40.0);
+        request.parameters.cave_w = 1.25;
+        for shape in [TerrainShape::Square, TerrainShape::Cylinder] {
+            let options = SceneOptions { shape, ..bare() };
+            let field = TerrainField::new(request.seed);
+            let ecology = Ecology::new(request.seed);
+            let mut volume =
+                Volume::generate(&request, &field, &ecology, 128, 1, false, options, &|| {
+                    false
+                })
+                .unwrap();
+            volume.clip_shape(shape);
+            let mut serial = MeshBuilder::new(&request);
+            volume.mesh(&mut serial, &|| false).unwrap();
+            let expected: BTreeMap<_, _> = serial
+                .sections
+                .iter_mut()
+                .map(|(key, mesh)| {
+                    mesh.sort_solid();
+                    (*key, mesh.fingerprint())
+                })
+                .collect();
+            let parallel = mesh_snapshot_with_options(&request, 128, &options).unwrap();
+            assert_eq!(parallel.voxel_step, 1);
+            assert_eq!(parallel.section_hashes, expected);
+            assert_eq!(parallel.scene.material_quads, serial.scene.material_quads);
+            assert_eq!(parallel.scene.cave_faces, serial.scene.cave_faces);
         }
     }
     #[test]
@@ -772,7 +904,9 @@ struct Volume {
 }
 impl Volume {
     fn index(&self, x: usize, y: usize, z: usize) -> usize {
-        (y * self.n + z) * self.n + x
+        // Generation, cave palettes and wall merging all walk vertical columns.
+        // Keep a column contiguous instead of jumping n*n bytes for every Y.
+        (z * self.n + x) * self.vertical + y
     }
     fn get(&self, x: i32, y: i32, z: i32) -> u8 {
         if x < 0
@@ -855,6 +989,9 @@ impl Volume {
         }
     }
     fn apply_view(&mut self, view: UndergroundView) {
+        if view == UndergroundView::Surface {
+            return;
+        }
         for z in 0..self.n {
             for x in 0..self.n {
                 for y in 0..self.vertical {
@@ -901,7 +1038,29 @@ impl Volume {
         step: u32,
         density: bool,
         options: SceneOptions,
-        cancelled: &impl Fn() -> bool,
+        cancelled: &(impl Fn() -> bool + Sync),
+    ) -> Option<Self> {
+        let workers = if size >= 128 {
+            std::thread::available_parallelism()
+                .map_or(1, usize::from)
+                .min(4)
+        } else {
+            1
+        };
+        Self::generate_with_workers(
+            snapshot, field, ecology, size, step, density, options, cancelled, workers,
+        )
+    }
+    fn generate_with_workers(
+        snapshot: &TerrainSnapshot,
+        field: &TerrainField,
+        ecology: &Ecology,
+        size: u32,
+        step: u32,
+        density: bool,
+        options: SceneOptions,
+        cancelled: &(impl Fn() -> bool + Sync),
+        workers: usize,
     ) -> Option<Self> {
         let n = (size / step) as usize;
         let ystep = if density { step as i32 } else { 1 };
@@ -937,136 +1096,173 @@ impl Volume {
             (0.78 - parameters.cave_threshold) * 4.0
         };
         let underground_field = UndergroundField::new(snapshot.seed);
-        for z in 0..n {
-            if cancelled() {
-                return None;
-            }
-            for x in 0..n {
-                let wx = origin + x as i32 * step as i32;
-                let wz = origin + z as i32 * step as i32;
-                if !options.shape.contains(
-                    wx as f32 + step as f32 * 0.5,
-                    wz as f32 + step as f32 * 0.5,
-                    size,
-                ) {
-                    continue;
+        let ponds = &volume.ponds;
+        let fill = |start: usize,
+                    cells: &mut [u8],
+                    carved: &mut [bool],
+                    heights: &mut [i32]|
+         -> Option<()> {
+            for local_z in 0..heights.len() / n {
+                let z = start + local_z;
+                if cancelled() {
+                    return None;
                 }
-                let base = base_height(field, snapshot, wx, wz);
-                let (height, water) = if options.water {
-                    pond_height(base, wx, wz, &volume.ponds)
-                } else {
-                    (base, 0)
-                };
-                volume.surfaces[z * n + x] = height;
-                let profile = ecology.surface_profile(wx, wz, height as f32);
-                let top = if options.water && height <= water + 1 {
-                    Material::Sand
-                } else {
-                    surface_material(profile.top)
-                };
-                let subsoil = if top == Material::Sand {
-                    Material::Sand
-                } else {
-                    surface_material(profile.subsoil)
-                };
-                let caves = if options.caves {
-                    ecology.cave_column(wx, wz, height as f32)
-                } else {
-                    CaveColumn::default()
-                };
-                let underground = if options.caves {
-                    underground_field.column(wx, wz, height as f32)
-                } else {
-                    UndergroundColumn::default()
-                };
-                let mut slices = [[0.0; 2]; 64];
-                let mut slice_count = 0;
-                for range in caves.intervals().iter().chain(underground.intervals()) {
-                    slices[slice_count] = cave_slice(
-                        *range,
-                        wx,
-                        wz,
-                        height,
-                        cave_margin,
-                        snapshot.seed,
-                        parameters.cave_w,
-                    );
-                    slice_count += 1;
-                }
-                let column_limit = if density {
-                    vertical
-                } else {
-                    height.max(water).clamp(0, 128) as usize
-                };
-                for y in 0..column_limit {
-                    let wy = y as i32 * ystep;
-                    let density_solid = if density {
-                        field.density(
-                            f64::from(wx) + f64::from(step) * 0.5,
-                            f64::from(wy) + f64::from(ystep) * 0.5
-                                - f64::from(wave(snapshot, f64::from(wx), f64::from(wz))),
-                            f64::from(wz) + f64::from(step) * 0.5,
-                            &parameters,
-                        ) > 0.
-                    } else {
-                        wy < height
-                    };
-                    let solid = density_solid && !(options.water && wy >= height && height < base);
-                    let index = volume.index(x, y, z);
-                    if solid
-                        && options.caves
-                        && wy >= 3
-                        && slices[..slice_count]
-                            .iter()
-                            .any(|r| wy as f32 >= r[0] && wy as f32 <= r[1])
-                    {
-                        volume.carved[index] = true;
-                        if options.water
-                            && underground.water_level().is_some_and(|level| wy <= level)
-                        {
-                            volume.cells[index] = encode(Material::Water);
-                        }
+                for x in 0..n {
+                    let wx = origin + x as i32 * step as i32;
+                    let wz = origin + z as i32 * step as i32;
+                    if !options.shape.contains(
+                        wx as f32 + step as f32 * 0.5,
+                        wz as f32 + step as f32 * 0.5,
+                        size,
+                    ) {
                         continue;
                     }
-                    if solid {
-                        let depth = height - 1 - wy;
-                        let material = if depth == 0 {
-                            top
-                        } else if (1..=i32::from(profile.stone_depth)).contains(&depth) {
-                            subsoil
+                    let base = base_height(field, snapshot, wx, wz);
+                    let (height, water) = if options.water {
+                        pond_height(base, wx, wz, ponds)
+                    } else {
+                        (base, 0)
+                    };
+                    heights[local_z * n + x] = height;
+                    let profile = ecology.surface_profile(wx, wz, height as f32);
+                    let top = if options.water && height <= water + 1 {
+                        Material::Sand
+                    } else {
+                        surface_material(profile.top)
+                    };
+                    let subsoil = if top == Material::Sand {
+                        Material::Sand
+                    } else {
+                        surface_material(profile.subsoil)
+                    };
+                    let caves = if options.caves {
+                        ecology.cave_column(wx, wz, height as f32)
+                    } else {
+                        CaveColumn::default()
+                    };
+                    let underground = if options.caves {
+                        underground_field.column(wx, wz, height as f32)
+                    } else {
+                        UndergroundColumn::default()
+                    };
+                    let mut slices = [[0.0; 2]; 64];
+                    let mut slice_count = 0;
+                    for range in caves.intervals().iter().chain(underground.intervals()) {
+                        slices[slice_count] = cave_slice(
+                            *range,
+                            wx,
+                            wz,
+                            height,
+                            cave_margin,
+                            snapshot.seed,
+                            parameters.cave_w,
+                        );
+                        slice_count += 1;
+                    }
+                    let column_limit = if density {
+                        vertical
+                    } else {
+                        height.max(water).clamp(0, 128) as usize
+                    };
+                    for y in 0..column_limit {
+                        let wy = y as i32 * ystep;
+                        let density_solid = if density {
+                            field.density(
+                                f64::from(wx) + f64::from(step) * 0.5,
+                                f64::from(wy) + f64::from(ystep) * 0.5
+                                    - f64::from(wave(snapshot, f64::from(wx), f64::from(wz))),
+                                f64::from(wz) + f64::from(step) * 0.5,
+                                &parameters,
+                            ) > 0.
                         } else {
-                            let vein = hash(
-                                snapshot.seed,
-                                wx.div_euclid(3),
-                                wy.div_euclid(3),
-                                wz.div_euclid(3),
-                            );
-                            if depth > 22 && vein % 113 == 11 {
-                                Material::DiamondOre
-                            } else if depth > 16 && vein % 79 == 5 {
-                                Material::GoldOre
-                            } else if depth > 8 && vein % 53 == 3 {
-                                Material::CopperOre
-                            } else if depth > 5 && vein.is_multiple_of(41) {
-                                Material::CoalOre
-                            } else if depth > 9 && vein % 67 == 1 {
-                                Material::IronOre
-                            } else if wy < 8 && vein % 29 == 3 {
-                                Material::Gravel
-                            } else if wy < 5 && vein % 37 == 2 {
-                                Material::Clay
-                            } else if depth > 20 {
-                                Material::Deepslate
-                            } else {
-                                Material::Stone
-                            }
+                            wy < height
                         };
-                        volume.cells[index] = encode(material);
-                    } else if options.water && wy >= height && wy < water {
-                        volume.cells[index] = encode(Material::Water);
+                        let solid =
+                            density_solid && !(options.water && wy >= height && height < base);
+                        let index = (local_z * n + x) * vertical + y;
+                        if solid
+                            && options.caves
+                            && wy >= 3
+                            && slices[..slice_count]
+                                .iter()
+                                .any(|r| wy as f32 >= r[0] && wy as f32 <= r[1])
+                        {
+                            carved[index] = true;
+                            if options.water
+                                && underground.water_level().is_some_and(|level| wy <= level)
+                            {
+                                cells[index] = encode(Material::Water);
+                            }
+                            continue;
+                        }
+                        if solid {
+                            let depth = height - 1 - wy;
+                            let material = if depth == 0 {
+                                top
+                            } else if (1..=i32::from(profile.stone_depth)).contains(&depth) {
+                                subsoil
+                            } else {
+                                let vein = hash(
+                                    snapshot.seed,
+                                    wx.div_euclid(3),
+                                    wy.div_euclid(3),
+                                    wz.div_euclid(3),
+                                );
+                                if depth > 22 && vein % 113 == 11 {
+                                    Material::DiamondOre
+                                } else if depth > 16 && vein % 79 == 5 {
+                                    Material::GoldOre
+                                } else if depth > 8 && vein % 53 == 3 {
+                                    Material::CopperOre
+                                } else if depth > 5 && vein.is_multiple_of(41) {
+                                    Material::CoalOre
+                                } else if depth > 9 && vein % 67 == 1 {
+                                    Material::IronOre
+                                } else if wy < 8 && vein % 29 == 3 {
+                                    Material::Gravel
+                                } else if wy < 5 && vein % 37 == 2 {
+                                    Material::Clay
+                                } else if depth > 20 {
+                                    Material::Deepslate
+                                } else {
+                                    Material::Stone
+                                }
+                            };
+                            cells[index] = encode(material);
+                        } else if options.water && wy >= height && wy < water {
+                            cells[index] = encode(Material::Water);
+                        }
                     }
                 }
             }
+            Some(())
+        };
+        let workers = workers.clamp(1, n);
+        if workers > 1 {
+            let rows = n.div_ceil(workers);
+            std::thread::scope(|scope| {
+                let jobs: Vec<_> = volume
+                    .cells
+                    .chunks_mut(rows * n * vertical)
+                    .zip(volume.carved.chunks_mut(rows * n * vertical))
+                    .zip(volume.surfaces.chunks_mut(rows * n))
+                    .enumerate()
+                    .map(|(i, ((cells, carved), heights))| {
+                        let fill = &fill;
+                        scope.spawn(move || fill(i * rows, cells, carved, heights))
+                    })
+                    .collect();
+                jobs.into_iter()
+                    .map(|j| j.join().ok().flatten())
+                    .collect::<Option<Vec<_>>>()
+            })?;
+        } else {
+            fill(
+                0,
+                &mut volume.cells,
+                &mut volume.carved,
+                &mut volume.surfaces,
+            )?;
         }
         if options.caves {
             volume.decorate_geology(&underground_field, snapshot.seed, cancelled)?;
@@ -1132,7 +1328,15 @@ impl Volume {
         Some(())
     }
     fn mesh(&self, builder: &mut MeshBuilder<'_>, cancelled: &impl Fn() -> bool) -> Option<()> {
-        for z in 0..self.n as i32 {
+        self.mesh_rows(builder, cancelled, 0..self.n)
+    }
+    fn mesh_rows(
+        &self,
+        builder: &mut MeshBuilder<'_>,
+        cancelled: &impl Fn() -> bool,
+        rows: std::ops::Range<usize>,
+    ) -> Option<()> {
+        for z in rows.map(|z| z as i32) {
             if cancelled() {
                 return None;
             }
@@ -1626,7 +1830,6 @@ impl Face {
 struct MeshBuilder<'a> {
     snapshot: &'a TerrainSnapshot,
     sections: BTreeMap<SectionKey, SectionMesh>,
-    checksum: u64,
     scene: SceneStats,
 }
 impl<'a> MeshBuilder<'a> {
@@ -1634,7 +1837,6 @@ impl<'a> MeshBuilder<'a> {
         Self {
             snapshot,
             sections: BTreeMap::new(),
-            checksum: 0xcbf2_9ce4_8422_2325,
             scene: SceneStats::default(),
         }
     }
@@ -1803,9 +2005,6 @@ impl<'a> MeshBuilder<'a> {
         if cave {
             self.scene.cave_faces += 1;
         }
-        for coordinate in [key.0, key.1, key.2, i32::from(material.layer())] {
-            self.checksum = (self.checksum ^ coordinate as u64).wrapping_mul(0x100_0000_01b3);
-        }
         let mesh = self.sections.entry(key).or_default();
         let vertices = if material.translucent() {
             &mut mesh.translucent
@@ -1814,9 +2013,6 @@ impl<'a> MeshBuilder<'a> {
         };
         for (position, uv) in corners.into_iter().zip(uv) {
             let local = std::array::from_fn(|i| position[i] - origin[i] as f32);
-            for bits in local.map(f32::to_bits).into_iter().chain([color]) {
-                self.checksum = (self.checksum ^ u64::from(bits)).wrapping_mul(0x100_0000_01b3);
-            }
             vertices.push(TerrainVertex::new(
                 local,
                 uv,

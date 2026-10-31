@@ -163,3 +163,9 @@ and logs: `run/optimized-window-27ff48fa72894eff9c507bf1ed937c0b`.
 真实 WASAPI 回环测试使用 48 kHz 双声道默认输出设备，1201 帧 GPU 渲染后正常退出，
 截图中系统音频 RMS 为 0.299，频谱和地形随输入更新。
 证据：`run/validation/capture-tests.log`、`capture-clippy.log`、`system-capture-gpu.json`。
+
+2026-10-31 完整精度性能更新：体素逐列连续存储、最多四线程填充/网格生成、
+未变化 GPU 区段复用。105 项测试及串行/并行几何一致性检查通过。
+本机短测中，128 地形更新约 13.45 → 20.93 次/秒，256 约 3.00 → 4.97 次/秒；
+画面帧率均约 144 FPS。256 完整精度仍有明显计算成本。
+条件和限制见 `PERFORMANCE.md`，数据见 `run/validation/full-detail-comparison.json`。

@@ -12,7 +12,7 @@ use crate::{
 };
 use glam::DVec3;
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     error::Error,
     path::PathBuf,
     sync::{
@@ -200,7 +200,7 @@ struct App {
     frames: u64,
     meshes: u64,
     mesh_hashes: Vec<u64>,
-    uploaded_columns: HashSet<(i32, i32)>,
+    uploaded_sections: BTreeMap<horizon_client_render::gfx::SectionKey, u64>,
     last_mesh_audio: f64,
     upload_ms: f32,
     gpu_ms: Option<f32>,
@@ -284,7 +284,7 @@ impl App {
             frames: 0,
             meshes: 0,
             mesh_hashes: Vec::new(),
-            uploaded_columns: HashSet::new(),
+            uploaded_sections: BTreeMap::new(),
             last_mesh_audio: 0.,
             upload_ms: 0.,
             gpu_ms: None,
@@ -905,13 +905,20 @@ impl App {
             }
             if let Some(renderer) = &mut self.renderer {
                 let upload_started = Instant::now();
-                renderer
-                    .renderer
-                    .remove_columns(self.uploaded_columns.drain());
-                for (key, mesh) in &result.sections {
-                    renderer.renderer.upload(*key, mesh);
-                    self.uploaded_columns.insert((key.0, key.2));
+                let empty = horizon_client_render::mesher::SectionMesh::default();
+                for key in self
+                    .uploaded_sections
+                    .keys()
+                    .filter(|key| !result.section_hashes.contains_key(key))
+                {
+                    renderer.renderer.upload(*key, &empty);
                 }
+                for (key, mesh) in &result.sections {
+                    if self.uploaded_sections.get(key) != result.section_hashes.get(key) {
+                        renderer.renderer.upload(*key, mesh);
+                    }
+                }
+                self.uploaded_sections = result.section_hashes;
                 self.upload_ms = upload_started.elapsed().as_secs_f32() * 1000.0;
             }
             tracing::debug!(
