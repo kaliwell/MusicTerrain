@@ -17,6 +17,7 @@
 再在“已安装”列表选择本项目。也可在编辑器“创建壁纸”入口导入 `index.html`。
 不要导入整个 Rust 仓库。
 所有运行文件都位于 `dist/MusicTerrain-Web`，可以离线复制使用。
+创意工坊发布步骤、动态 GIF 封面和展示视频见[发布说明](PUBLISHING.md)。
 原始程序设置面板默认隐藏，通过 Wallpaper Engine 的属性栏调整参数。
 
 支持：

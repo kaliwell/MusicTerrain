@@ -35,6 +35,7 @@ cargo run -p musicterrain -- preview --audio /path/to/song.wav
 65 种材质、村庄农田、矿井、动态洞穴，以及参数、映射、预设和噪波实验室。
 通过 Wallpaper Engine 系统频谱响应音乐，也可导入本地文件交给 Rust FFT 分析。
 [网页壁纸构建与导入说明](docs/musicterrain/WEB_WALLPAPER.md)。
+[创意工坊发布与动态展示素材](docs/musicterrain/PUBLISHING.md)。
 运行 `tools/build-musicterrain-web.ps1 -Install` 可构建并安装到本机 Wallpaper Engine；
 打包后双击 `Start-MusicTerrain-Web.cmd` 打开，导入包位于 `dist/MusicTerrain-Web.zip`。
 
