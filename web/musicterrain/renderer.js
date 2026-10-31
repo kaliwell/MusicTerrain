@@ -4,7 +4,7 @@
   precision highp float;
   layout(location=0) in vec3 position;layout(location=1) in vec2 uv;layout(location=2) in float layer;layout(location=3) in vec3 tint;
   uniform mat4 matrix;out vec2 texUV;flat out float texLayer;out vec3 light;
-  void main(){gl_Position=matrix*vec4(position,1.0);texUV=uv;texLayer=layer;light=tint;}`;
+  void main(){gl_Position=matrix*vec4(position,1.0);texUV=uv/32768.0;texLayer=layer;light=tint;}`;
   const fragment=`#version 300 es
   precision highp float;precision highp sampler2DArray;
   uniform sampler2DArray atlas;uniform float time;in vec2 texUV;flat in float texLayer;in vec3 light;out vec4 result;
@@ -13,7 +13,7 @@
     result=vec4(color.rgb*light,color.a);}`;
   class Renderer{
     constructor(canvas){
-      this.canvas=canvas;const gl=canvas.getContext('webgl2',{alpha:true,antialias:true,powerPreference:'low-power'});
+      this.canvas=canvas;const gl=canvas.getContext('webgl2',{alpha:true,antialias:true,powerPreference:'high-performance'});
       if(!gl)throw new Error('无法创建 WebGL 2 画面，请检查 Wallpaper Engine 的显卡设置。');this.gl=gl;
       const shader=(type,source)=>{const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(shader));return shader;};
       this.program=gl.createProgram();const vs=shader(gl.VERTEX_SHADER,vertex),fs=shader(gl.FRAGMENT_SHADER,fragment);
@@ -21,6 +21,7 @@
       if(!gl.getProgramParameter(this.program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(this.program));
       this.matrix=gl.getUniformLocation(this.program,'matrix');this.time=gl.getUniformLocation(this.program,'time');
       this.texture=gl.createTexture();
+      this.indices=gl.createBuffer();this.indexQuads=0;
       this.parts=[this.part(),this.part()];gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
     }
     setAtlas(data,size=32,layers=65){const gl=this.gl;gl.bindTexture(gl.TEXTURE_2D_ARRAY,this.texture);
@@ -28,22 +29,34 @@
       gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
     }
-    part(){const gl=this.gl,vao=gl.createVertexArray(),buffer=gl.createBuffer();gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-      for(const [location,count,offset] of [[0,3,0],[1,2,12],[2,1,20],[3,3,24]]){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,count,gl.FLOAT,false,36,offset);}
-      return {vao,buffer,count:0};}
-    upload(mesh){const gl=this.gl;for(let i=0;i<2;i++){const data=i===0?mesh.solid:mesh.water;gl.bindBuffer(gl.ARRAY_BUFFER,this.parts[i].buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);this.parts[i].count=data.length/9;}}
+    part(){const gl=this.gl;
+      const slots=Array.from({length:2},()=>{const vao=gl.createVertexArray(),buffer=gl.createBuffer();gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indices);
+        for(const [location,count,type,normalized,offset] of [[0,3,gl.FLOAT,false,0],[1,2,gl.UNSIGNED_SHORT,false,12],[2,1,gl.UNSIGNED_SHORT,false,16],[3,3,gl.UNSIGNED_BYTE,true,20]]){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,count,type,normalized,24,offset);}
+        return {vao,buffer,capacity:0};});
+      return {slots,active:0,count:0};}
+    upload(mesh){const gl=this.gl,maxQuads=Math.max(mesh.solid.length,mesh.water.length)/96;
+      if(maxQuads>this.indexQuads){this.indexQuads=2**Math.ceil(Math.log2(Math.max(1,maxQuads)));const indices=new Uint32Array(this.indexQuads*6);
+        for(let q=0;q<this.indexQuads;q++)indices.set([q*4,q*4+1,q*4+2,q*4,q*4+2,q*4+3],q*6);
+        gl.bindVertexArray(this.parts[0].slots[0].vao);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indices);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);
+      }
+      for(let i=0;i<2;i++){const data=i===0?mesh.solid:mesh.water,part=this.parts[i];part.active=1-part.active;const slot=part.slots[part.active];gl.bindBuffer(gl.ARRAY_BUFFER,slot.buffer);
+        if(data.byteLength>slot.capacity){slot.capacity=Math.max(4096,2**Math.ceil(Math.log2(data.byteLength)));gl.bufferData(gl.ARRAY_BUFFER,slot.capacity,gl.DYNAMIC_DRAW);}
+        if(data.byteLength)gl.bufferSubData(gl.ARRAY_BUFFER,0,data);part.count=data.byteLength/96*6;
+      }
+    }
     draw(config,angle,time){
       const gl=this.gl,scale=Math.min(devicePixelRatio||1,2)*config.renderscale;
       const width=Math.max(1,Math.round(innerWidth*scale)),height=Math.max(1,Math.round(innerHeight*scale));
       if(this.canvas.width!==width||this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height;gl.viewport(0,0,width,height);}
       const radius=Math.max(config.size*1.9,145)/config.zoom,pitch=config.pitch||.58;
-      const eye=[Math.sin(angle)*radius*Math.cos(pitch),radius*Math.sin(pitch),Math.cos(angle)*radius*Math.cos(pitch)];
-      const projection=config.orthographic?MTMath.orthographic(Math.max(config.size*1.5,120)/config.zoom,width/height,.1,2000):MTMath.perspective(.73,width/height,.1,2000);
-      const matrix=MTMath.multiply(projection,MTMath.view(eye,[0,0,0]));
+      const target=[config.panx||0,config.pany||0,config.panz||0];
+      const eye=[target[0]+Math.sin(angle)*radius*Math.cos(pitch),target[1]+radius*Math.sin(pitch),target[2]+Math.cos(angle)*radius*Math.cos(pitch)],far=Math.max(2000,radius*4+1024);
+      const projection=config.orthographic?MTMath.orthographic(Math.max(config.size*1.5,120)/config.zoom,width/height,.1,far):MTMath.perspective(.73,width/height,.1,far);
+      const matrix=MTMath.multiply(projection,MTMath.view(eye,target));
       gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(this.program);gl.uniformMatrix4fv(this.matrix,false,matrix);gl.uniform1f(this.time,time);
       gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D_ARRAY,this.texture);
-      gl.disable(gl.BLEND);gl.depthMask(true);gl.bindVertexArray(this.parts[0].vao);gl.drawArrays(gl.TRIANGLES,0,this.parts[0].count);
-      gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.bindVertexArray(this.parts[1].vao);gl.drawArrays(gl.TRIANGLES,0,this.parts[1].count);gl.depthMask(true);
+      gl.disable(gl.BLEND);gl.depthMask(true);gl.bindVertexArray(this.parts[0].slots[this.parts[0].active].vao);gl.drawElements(gl.TRIANGLES,this.parts[0].count,gl.UNSIGNED_INT,0);
+      gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.bindVertexArray(this.parts[1].slots[this.parts[1].active].vao);gl.drawElements(gl.TRIANGLES,this.parts[1].count,gl.UNSIGNED_INT,0);gl.depthMask(true);
     }
   }
   root.MTRenderer=Renderer;

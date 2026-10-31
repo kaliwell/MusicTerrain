@@ -37,7 +37,7 @@
   }
   function clean(properties,current){
     const next={...current};
-    const numeric={size:[32,256],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],sensitivity:[.2,4],cavespeed:[0,1],zoom:[.5,2],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
+    const numeric={size:[32,256],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],sensitivity:[.2,4],cavespeed:[0,1],zoom:[.1,4],panx:[-512,512],pany:[-512,512],panz:[-512,512],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
     for(const [key,bounds] of Object.entries(numeric)){
       if(!properties[key])continue;
       const value=Number(properties[key].value);if(Number.isFinite(value))next[key]=Math.max(bounds[0],Math.min(bounds[1],value));

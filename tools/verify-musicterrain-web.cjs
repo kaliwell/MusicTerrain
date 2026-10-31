@@ -32,12 +32,24 @@ const server=http.createServer((request,response)=>{
   await engine.goto(url);await engine.waitForFunction(()=>window.MusicTerrain?.diagnostics.meshes>=2,{timeout:30000});
   assert.equal(await engine.evaluate(()=>window.__registrations),1);
   assert.equal(await engine.locator('#notice').isVisible(),false);
+  const sceneRevision=await engine.evaluate(()=>MusicTerrain.diagnostics.sceneRevision);
+  for(const zoom of [.1,.2,.3,.4]){
+   await engine.evaluate(zoom=>MusicTerrain.applyProperties({zoom:{value:zoom},panx:{value:4},pany:{value:2},panz:{value:-3}}),zoom);
+   await engine.waitForTimeout(60);
+   assert.equal(await engine.evaluate(()=>MusicTerrain.config.zoom),zoom);
+   assert.equal(await engine.evaluate(()=>MusicTerrain.diagnostics.sceneRevision),sceneRevision);
+  }
+  await engine.evaluate(()=>MusicTerrain.edit({zoom:1,panx:0,pany:0,panz:0}));
   await engine.evaluate(()=>wallpaperPropertyListener.applyUserProperties({orbit:{value:false},cavespeed:{value:0}}));
   await engine.waitForTimeout(600);
   const quiet=await engine.evaluate(()=>MusicTerrain.diagnostics.vertices);
   await engine.evaluate(()=>{window.__audioTimer=setInterval(()=>{const bins=new Array(128).fill(0);for(const i of [2,4,66,68])bins[i]=.002;__audioCallback(bins);},33);});
   await engine.waitForFunction(quiet=>MusicTerrain.diagnostics.input.rms<.001&&MusicTerrain.diagnostics.audio.bass>.3&&MusicTerrain.diagnostics.vertices!==quiet,quiet,{timeout:15000});
   results.live=await engine.evaluate(()=>({...MusicTerrain.diagnostics}));
+  await engine.evaluate(()=>wallpaperPropertyListener.applyGeneralProperties({fps:60}));
+  let smoothStart=await engine.evaluate(()=>({frames:MusicTerrain.diagnostics.frames,time:performance.now()}));
+  await engine.waitForTimeout(1500);
+  results.rendering=await engine.evaluate(start=>({fps:(MusicTerrain.diagnostics.frames-start.frames)*1000/(performance.now()-start.time),uploadMs:MusicTerrain.diagnostics.uploadMs,meshBytes:MusicTerrain.diagnostics.meshBytes}),smoothStart);
   await engine.screenshot({path:path.join(evidence,'audio-reactive.png')});
   for(let shape=0;shape<4;shape++){
    const previous=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);
@@ -72,7 +84,19 @@ const server=http.createServer((request,response)=>{
   let scene=await engine.evaluate(()=>MusicTerrain.diagnostics.scene);
   assert.ok(scene.houses>0&&scene.mines>0&&scene.rails>0);
   assert.equal(scene.materials.length,65);assert.ok(scene.materials.slice(10).some(v=>v>0));
-  await engine.click('#settings');await engine.getByRole('button',{name:'噪波实验室',exact:true}).click();
+  await engine.click('#settings');
+  const beforeCamera=await engine.evaluate(()=>MusicTerrain.diagnostics.sceneRevision);
+  await engine.locator('input[data-property="zoom"][type="number"]').fill('0.2');
+  await engine.locator('input[data-property="zoom"][type="number"]').press('Tab');
+  assert.equal(await engine.evaluate(()=>MusicTerrain.config.zoom),.2);
+  await engine.locator('input[data-property="panx"]').fill('12.3');await engine.locator('input[data-property="panx"]').press('Tab');
+  assert.equal(await engine.evaluate(()=>MusicTerrain.config.panx),12.3);
+  await engine.click('#reset-camera');assert.equal(await engine.evaluate(()=>MusicTerrain.config.zoom),1);
+  await engine.mouse.move(800,350);await engine.mouse.down({button:'middle'});await engine.mouse.move(850,370,{steps:5});await engine.mouse.up({button:'middle'});
+  assert.ok(await engine.evaluate(()=>Math.abs(MusicTerrain.config.panx)+Math.abs(MusicTerrain.config.pany)>0));
+  assert.equal(await engine.evaluate(()=>MusicTerrain.diagnostics.sceneRevision),beforeCamera);
+  await engine.click('#reset-camera');
+  await engine.getByRole('button',{name:'噪波实验室',exact:true}).click();
   await engine.waitForFunction(()=>MusicTerrain.config.lab&&document.querySelector('canvas.noise').getContext('2d').getImageData(20,20,1,1).data[3]===255);
   await engine.screenshot({path:path.join(evidence,'native-scene-lab.png')});
   await engine.getByRole('button',{name:'预设 / 文件',exact:true}).click();
@@ -104,7 +128,8 @@ const server=http.createServer((request,response)=>{
   const poster=process.argv.includes('--update-preview')?path.resolve(__dirname,'../web/musicterrain/preview.jpg'):path.join(evidence,'preview.jpg');
   await engine.screenshot({path:poster,type:'jpeg',quality:90});
   assert.deepEqual(errors,[]);results.errors=errors;
+  assert.equal(await engine.evaluate(()=>document.getElementById('world').getContext('webgl2').getError()),0);
   fs.writeFileSync(path.join(evidence,'results.json'),JSON.stringify(results,null,2));
-  console.log(JSON.stringify({passed:true,previewMs:results.preview.generationMs,liveMs:results.live.generationMs,largeMs:results.large.generationMs,fpsCapFrames:frames,evidence},null,2));
+  console.log(JSON.stringify({passed:true,previewMs:results.preview.generationMs,liveMs:results.live.generationMs,largeMs:results.large.generationMs,rendering:results.rendering,fpsCapFrames:frames,evidence},null,2));
  }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});

@@ -18,8 +18,8 @@ onmessage=async event=>{
     const pointer=wasm.terrain_input(input.length);if(!pointer)throw new Error('?????? 1 MiB');
     new Uint8Array(wasm.memory.buffer,pointer,input.length).set(input);
     if(wasm.terrain_run()!==1){postMessage({type:'invalid',revision:request.revision,message:json().error});return;}
-    const solid=new Float32Array(wasm.memory.buffer,wasm.terrain_solid_ptr(),wasm.terrain_solid_len()).slice();
-    const water=new Float32Array(wasm.memory.buffer,wasm.terrain_water_ptr(),wasm.terrain_water_len()).slice();
+    const solid=new Uint8Array(wasm.memory.buffer,wasm.terrain_solid_ptr(),wasm.terrain_solid_len()).slice();
+    const water=new Uint8Array(wasm.memory.buffer,wasm.terrain_water_ptr(),wasm.terrain_water_len()).slice();
     const lab=new Uint8ClampedArray(wasm.memory.buffer,wasm.terrain_lab_ptr(),wasm.terrain_lab_len()).slice();
     postMessage({type:'mesh',revision:request.revision,solid,water,lab,stats:json(),carved:wasm.terrain_carved(),milliseconds:performance.now()-start},[solid.buffer,water.buffer,lab.buffer]);
   }catch(error){postMessage({type:'error',message:String(error)});}

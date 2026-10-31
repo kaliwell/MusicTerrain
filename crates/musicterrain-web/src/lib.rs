@@ -18,7 +18,7 @@ use serde::Deserialize;
 use serde_json::json;
 use std::cell::RefCell;
 
-const STRIDE: usize = 9;
+const STRIDE: usize = 24; // packed position, fixed-point UV, layer, light and RGBA
 const MAX_INPUT: usize = 1_048_576;
 #[derive(Deserialize)]
 #[serde(default)]
@@ -93,8 +93,8 @@ struct Kernel {
     input: Vec<u8>,
     json: Vec<u8>,
     atlas: TextureAtlas,
-    solid: Vec<f32>,
-    water: Vec<f32>,
+    solid: Vec<u8>,
+    water: Vec<u8>,
     lab: Vec<u8>,
     carved: u32,
     mapping: MappingState,
@@ -219,23 +219,16 @@ impl Kernel {
                 (&section.solid, &mut self.solid),
                 (&section.translucent, &mut self.water),
             ] {
-                for quad in vertices.as_chunks::<4>().0 {
-                    for index in [0, 1, 2, 0, 2, 3] {
-                        let v = quad[index];
-                        let uv = v.uv();
-                        let color = v.color.to_le_bytes();
-                        out.extend_from_slice(&[
-                            v.pos[0] + origin[0] as f32,
-                            v.pos[1] + origin[1] as f32,
-                            v.pos[2] + origin[2] as f32,
-                            uv[0],
-                            uv[1],
-                            f32::from(v.layer & 0x7fff),
-                            f32::from(color[0]) / 255.0,
-                            f32::from(color[1]) / 255.0,
-                            f32::from(color[2]) / 255.0,
-                        ]);
+                for v in vertices {
+                    for (position, offset) in v.pos.into_iter().zip(origin) {
+                        out.extend_from_slice(&(position + offset as f32).to_le_bytes());
                     }
+                    for uv in v.uv() {
+                        out.extend_from_slice(&((uv * 32768.0).round() as u16).to_le_bytes());
+                    }
+                    out.extend_from_slice(&(v.layer & 0x7fff).to_le_bytes());
+                    out.extend_from_slice(&v.light.to_le_bytes());
+                    out.extend_from_slice(&v.color.to_le_bytes());
                 }
             }
         }
@@ -321,8 +314,8 @@ macro_rules! exports {
     };
 }
 exports!(terrain_json_ptr, terrain_json_len, json, u8);
-exports!(terrain_solid_ptr, terrain_solid_len, solid, f32);
-exports!(terrain_water_ptr, terrain_water_len, water, f32);
+exports!(terrain_solid_ptr, terrain_solid_len, solid, u8);
+exports!(terrain_water_ptr, terrain_water_len, water, u8);
 exports!(terrain_lab_ptr, terrain_lab_len, lab, u8);
 #[unsafe(no_mangle)]
 pub extern "C" fn terrain_atlas_ptr() -> *const u8 {
@@ -353,12 +346,34 @@ mod tests {
         k.generate(c).unwrap();
         assert_eq!(k.atlas.layers, 65);
         assert!(!k.solid.is_empty());
-        assert!(k.solid.len().is_multiple_of(STRIDE * 3));
-        assert!(k.solid.iter().all(|v| v.is_finite()));
+        assert!(k.solid.len().is_multiple_of(STRIDE * 4));
+        assert!(k.solid.as_chunks::<STRIDE>().0.iter().all(|v| {
+            v[..12]
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| f32::from_le_bytes(*p).is_finite())
+        }));
         let stats: serde_json::Value = serde_json::from_slice(&k.json).unwrap();
         assert!(stats["houses"].as_u64().unwrap() > 0);
         assert!(stats["mines"].as_u64().unwrap() > 0);
-        assert!(k.solid.as_chunks::<STRIDE>().0.iter().any(|v| v[5] > 9.0));
+        let quads: u64 = stats["materials"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_u64().unwrap())
+            .sum();
+        assert_eq!(
+            (k.solid.len() + k.water.len()) as u64,
+            quads * 4 * STRIDE as u64
+        );
+        assert!(
+            k.solid
+                .as_chunks::<STRIDE>()
+                .0
+                .iter()
+                .any(|v| u16::from_le_bytes([v[16], v[17]]) > 9)
+        );
     }
     #[test]
     fn invalid_config_does_not_replace_previous_mesh() {

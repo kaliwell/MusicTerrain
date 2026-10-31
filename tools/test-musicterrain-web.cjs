@@ -37,3 +37,10 @@ test('camera projects the target into the center in both projection modes',()=>{
   assert.ok(result[2]/result[3]>-1&&result[2]/result[3]<1);
  }
 });
+test('camera accepts tenths and position offsets independently of scene parameters',()=>{
+ const defaults={size:64,shape:1,noise:2,seed:42,zoom:1,panx:0,pany:0,panz:0};
+ for(const value of [.1,.2,.3,.4])assert.equal(clean({zoom:{value:String(value)}},defaults).zoom,value);
+ const moved=clean({panx:{value:'12.3'},pany:{value:'-7.2'},panz:{value:'4.5'}},defaults);
+ assert.deepEqual([moved.panx,moved.pany,moved.panz],[12.3,-7.2,4.5]);assert.equal(moved.size,64);
+ assert.equal(clean({zoom:{value:0}},defaults).zoom,.1);
+});

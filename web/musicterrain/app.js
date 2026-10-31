@@ -1,25 +1,28 @@
 (function(){
   'use strict';
   const engine=typeof window.wallpaperRegisterAudioListener==='function';
-  let config={size:64,shape:1,noise:3,seed:42,intensity:1,sensitivity:1,autogain:true,cavespeed:.12,zoom:1,meshfps:15,orbitspeed:8,renderscale:1,orbit:true,orthographic:false,caves:true,trees:true,water:true,showcontrols:false,background:[.67,.81,.94],biome:"auto",villages:"showcase",mines:"showcase",view:"surface",full_detail:true,lab:false,slice:8,overlay:true,pitch:.58};
+  let config={size:64,shape:1,noise:3,seed:42,intensity:1,sensitivity:1,autogain:true,cavespeed:.12,zoom:1,panx:0,pany:0,panz:0,meshfps:15,orbitspeed:8,renderscale:1,orbit:true,orthographic:false,caves:true,trees:true,water:true,showcontrols:false,background:[.67,.81,.94],biome:"auto",villages:"showcase",mines:"showcase",view:"surface",full_detail:true,lab:false,slice:8,overlay:true,pitch:.58};
   const normalizer=MTAudio.createNormalizer();
-  let fps=30,enginePaused=false,hidden=!engine&&document.hidden,simulation=false,failed=false,ready=false,busy=false,revision=1,dirty=true;
+  let fps=60,enginePaused=false,hidden=!engine&&document.hidden,simulation=false,failed=false,ready=false,busy=false,revision=1,dirty=true;
+  let lastFps=performance.now(),fpsFrames=0,fpsMeshes=0;
   let features=null,metadata=null,fileAudio=null,blockedRevision=null;
   let audio=MTAudio.zero(),lastAudio=-Infinity,phase=0,clock=0,angle=.9,lastFrame=performance.now(),lastDraw=0,lastJob=-Infinity,lastJobClock=0,renderer=null,worker=null,held=null;
-  const diagnostics={engine,frames:0,meshes:0,dropped:0,generationMs:0,vertices:0,carved:0,audio:MTAudio.zero(),input:MTAudio.zero(),audioCallbacks:0,paused:false,config};
+  const diagnostics={engine,frames:0,meshes:0,dropped:0,generationMs:0,vertices:0,carved:0,sceneRevision:1,audio:MTAudio.zero(),input:MTAudio.zero(),audioCallbacks:0,paused:false,config};
   const $=id=>document.getElementById(id);
+  const cameraKeys=new Set(['zoom','panx','pany','panz','pitch','yaw','orbit','orbitspeed','orthographic','renderscale','background','showcontrols','sensitivity','autogain','meshfps']);
+  function update(next){const changed=Object.keys(next).filter(key=>JSON.stringify(next[key])!==JSON.stringify(config[key]));if(!changed.length)return;config=next;diagnostics.config=config;if(changed.some(key=>!cameraKeys.has(key))){revision++;diagnostics.sceneRevision=revision;dirty=true;}sync();}
   function fail(error){failed=true;$('error').hidden=false;$('error').textContent='壁纸未能加载\n'+String(error);console.error(error);}
-  function apply(properties){const next=MTAudio.clean(properties,config);if(JSON.stringify(next)!==JSON.stringify(config)){config=next;diagnostics.config=config;revision++;dirty=true;sync();}}
+  function apply(properties){update(MTAudio.clean(properties,config));}
   // Register synchronously at body end: WE can deliver properties/audio before
   // worker initialization. Always retain only the latest audio observation.
   window.wallpaperPropertyListener={
     applyUserProperties:apply,
-    applyGeneralProperties(properties){if(Number.isFinite(Number(properties.fps)))fps=Math.max(1,Math.min(240,Number(properties.fps)||30));},
+    applyGeneralProperties(properties){if(Number.isFinite(Number(properties.fps)))fps=Math.max(1,Math.min(240,Number(properties.fps)||60));diagnostics.fpsLimit=fps;},
     setPaused(value){enginePaused=Boolean(value);lastFrame=performance.now();lastDraw=0;diagnostics.paused=enginePaused||hidden;}
   };
   function receiveAudio(values){lastAudio=performance.now();diagnostics.input=MTAudio.spectrum(values);audio=normalizer.update(diagnostics.input,lastAudio/1000,config.sensitivity,config.autogain);diagnostics.audio=audio;diagnostics.audioCallbacks++;features=MTAudio.features(values,audio,lastAudio/1000);}
   if(engine)window.wallpaperRegisterAudioListener(receiveAudio);
-  function edit(patch){config={...config,...patch};diagnostics.config=config;revision++;dirty=true;sync();}
+  function edit(patch){update({...config,...patch});}
   window.MusicTerrain={diagnostics,applyProperties:apply,receiveAudio,setPaused:window.wallpaperPropertyListener.setPaused,edit,get config(){return config;},get metadata(){return metadata;},setFileAudio(value){fileAudio=value;}};
   function sync(){
     document.body.classList.toggle('wallpaper',engine);document.body.classList.toggle('controls',config.showcontrols);
@@ -31,11 +34,12 @@
   }
   function accept(message){
     if(message.revision!==revision){diagnostics.dropped++;dirty=true;return;}
-    renderer.upload(message);diagnostics.meshes++;diagnostics.generationMs=message.milliseconds;
-    diagnostics.vertices=(message.solid.length+message.water.length)/9;diagnostics.carved=message.carved;
+    const uploadStart=performance.now();renderer.upload(message);diagnostics.uploadMs=performance.now()-uploadStart;diagnostics.meshes++;fpsMeshes++;diagnostics.generationMs=message.milliseconds;
+    diagnostics.meshBytes=message.solid.byteLength+message.water.byteLength;diagnostics.vertices=diagnostics.meshBytes/96*6;diagnostics.carved=message.carved;
     $('status').textContent=engine?(diagnostics.audioCallbacks===0?'等待系统音频，请开启音频处理':`音频输入 ${diagnostics.input.rms.toFixed(4)} → 响应 ${diagnostics.audio.bass.toFixed(2)} · ${diagnostics.audioCallbacks} 次回调`):simulation?'模拟音乐预览 · 无声音':'浏览器预览 · 等待音频';
     diagnostics.scene=message.stats;diagnostics.audioSource=fileAudio?'file':engine?'system':'preview';window.MTEditor?.mesh(message);
-    $('metrics').textContent=`${config.full_detail?'完整精度':'自适应精度'} · ${config.size} × ${config.size} · 步长 ${message.stats.voxelStep}\n生成 ${message.milliseconds.toFixed(1)} ms · ${(diagnostics.vertices/3).toLocaleString()} 个三角形`;
+    $('metrics').textContent=`画面 ${Math.round(diagnostics.drawFps||0)} FPS / 上限 ${fps} · 地形 ${(diagnostics.meshHz||0).toFixed(1)} 次/秒\n${config.full_detail?'完整精度':'自适应精度'} · ${config.size} × ${config.size} · 步长 ${message.stats.voxelStep}\n生成 ${message.milliseconds.toFixed(1)} ms · 上传 ${diagnostics.uploadMs.toFixed(1)} ms · ${(diagnostics.vertices/3).toLocaleString()} 个三角形`;
+    if(engine&&fps<30)$('metrics').textContent+='\nWallpaper Engine 的帧率上限较低，请在“设置 → 性能”调整。';
     if(engine)$('source').textContent=diagnostics.audioCallbacks===0?'尚未收到系统频谱，请开启壁纸的音频处理':diagnostics.input.rms<=1e-5?'音频接口已连接，当前没有声音':`已检测到系统音乐 · 输入 ${diagnostics.input.rms.toFixed(4)} / 响应 ${diagnostics.audio.rms.toFixed(2)}`;
     if(fileAudio){$('status').textContent=`本地音乐 · ${message.stats.features.time.toFixed(2)} 秒 · RMS ${message.stats.features.rms.toFixed(3)}`;$('source').textContent='本地文件播放 · Rust FFT 分析';}
   }
@@ -53,7 +57,8 @@
       worker.postMessage({type:'generate',config:{...config,sample_rate:local?.rate||48000},audio,features:local?null:features,pcm:local?.pcm,clock:local?.time??clock,phase:local?local.time*config.cavespeed:phase,dt:local?.paused?0:elapsed,revision});
     }
     const interval=1000/fps;
-    if(now-lastDraw>=interval){lastDraw=now-(now-lastDraw)%interval;renderer.draw(config,angle+(config.yaw||0),clock);diagnostics.frames++;}
+    if(now-lastDraw>=interval-.5){lastDraw=Math.max(lastDraw+interval,now-interval);renderer.draw(config,angle+(config.yaw||0),clock);diagnostics.frames++;fpsFrames++;}
+    if(now-lastFps>=1000){diagnostics.drawFps=fpsFrames*1000/(now-lastFps);diagnostics.meshHz=fpsMeshes*1000/(now-lastFps);fpsFrames=fpsMeshes=0;lastFps=now;}
   }
   try{
     sync();renderer=new MTRenderer($('world'));worker=new Worker('terrain-worker.js');
@@ -65,9 +70,17 @@
     $('demo').onclick=()=>{simulation=!simulation;$('demo').textContent=simulation?'关闭模拟音乐':'开启模拟音乐（无声音）';dirty=true;};
     $('world').addEventListener('wheel',event=>{event.preventDefault();apply({zoom:{value:config.zoom*Math.exp(-event.deltaY*.001)}});},{passive:false});
     window.MusicTerrain.setAtlas=(pixels)=>renderer.setAtlas(pixels);
-    let dragging=false,px=0,py=0;const canvas=$('world');canvas.oncontextmenu=e=>e.preventDefault();
-    canvas.addEventListener('pointerdown',e=>{if(e.button===2){dragging=true;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);}});
-    canvas.addEventListener('pointerup',()=>dragging=false);canvas.addEventListener('pointermove',e=>{if(!dragging)return;config.yaw=(config.yaw||0)+(e.clientX-px)*.006;config.pitch=Math.max(.1,Math.min(1.45,config.pitch+(e.clientY-py)*.004));px=e.clientX;py=e.clientY;});
+    let dragging=false,panning=false,px=0,py=0;const canvas=$('world');canvas.oncontextmenu=e=>e.preventDefault();
+    canvas.addEventListener('pointerdown',e=>{if(e.button===2||e.button===1){e.preventDefault();dragging=true;panning=e.button===1||e.shiftKey;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);}});
+    const endDrag=()=>{dragging=false;sync();};canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+    canvas.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-px,dy=e.clientY-py;
+      if(panning){const heading=angle+(config.yaw||0),pitch=config.pitch||.58,scale=Math.max(config.size*1.9,145)/config.zoom/innerHeight*.75;
+        config.panx=Math.max(-512,Math.min(512,(config.panx||0)+(-dx*Math.cos(heading)-dy*Math.sin(heading)*Math.sin(pitch))*scale));
+        config.pany=Math.max(-512,Math.min(512,(config.pany||0)+dy*Math.cos(pitch)*scale));
+        config.panz=Math.max(-512,Math.min(512,(config.panz||0)+(dx*Math.sin(heading)-dy*Math.cos(heading)*Math.sin(pitch))*scale));
+      }else{config.yaw=(config.yaw||0)+dx*.006;config.pitch=Math.max(.1,Math.min(1.45,config.pitch+dy*.004));}px=e.clientX;py=e.clientY;
+    });
+    $('reset-camera').onclick=()=>edit({panx:0,pany:0,panz:0,pitch:.58,yaw:0,zoom:1});
     $('world').addEventListener('webglcontextlost',event=>{event.preventDefault();fail('显卡画面已中断，请重新加载壁纸。');});
     addEventListener('beforeunload',()=>worker.terminate());requestAnimationFrame(frame);
   }catch(error){fail(error);}
