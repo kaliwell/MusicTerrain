@@ -98,6 +98,15 @@ pub fn translate(language: Language, text: &str) -> Cow<'_, str> {
 
 // Longer phrases precede individual words used in dynamic diagnostic labels.
 const LABELS: &[(&str, &str)] = &[
+    ("SYSTEM AUDIO ON", "系统声音采集：开"),
+    ("SYSTEM AUDIO OFF", "系统声音采集：关"),
+    ("SYSTEM AUDIO LIVE", "正在采集系统声音"),
+    ("SYSTEM AUDIO ERROR", "系统声音采集失败"),
+    (
+        "SYSTEM AUDIO DISCONNECTED - RESELECT SOURCE",
+        "采集设备断开，请重新开启采集",
+    ),
+    ("FILE AUDIO MODE", "本地文件模式"),
     ("4D W / MUSIC REACTIVE CAVES", "4D W 维 / 音乐响应洞穴"),
     ("MINES REQUIRE FULL HEIGHT FIELD", "矿井需完整精度高度场"),
     ("SHAPE", "地形外形"),

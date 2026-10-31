@@ -29,3 +29,6 @@ mod unicode_font;
 pub mod village;
 #[cfg(feature = "native")]
 pub mod visual;
+
+#[cfg(feature = "native")]
+pub mod capture;

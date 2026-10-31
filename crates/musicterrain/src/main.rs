@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
     if command == "help" || args.iter().any(|a| a == "--help" || a == "-h") {
         println!(
-            "MusicTerrain\n  demo | preview [--language zh-CN|en] [--audio FILE] [--size 64|128|256] [--shape square|cylinder|hexagon|diamond] [--quality full|adaptive] [--orbit] [--orthographic] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--mines off|auto|showcase] [--view surface|cutaway|underground]\n                 [--noise perlin|simplex|fbm|ridged|billow|cellular|value|terraced] [--cave-w NUMBER]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB look; WASD fly; wheel zoom; Settings orbit/projection.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
+            "MusicTerrain\n  demo | preview [--language zh-CN|en] [--audio FILE] [--size 64|128|256] [--shape square|cylinder|hexagon|diamond] [--quality full|adaptive] [--orbit] [--orthographic] [--system-audio] [--preset-file JSON]\n                 [--biome auto|meadow|forest|alpine|shore|birch-forest|taiga|desert|badlands|savanna|swamp|jungle]\n                 [--mines off|auto|showcase] [--view surface|cutaway|underground]\n                 [--noise perlin|simplex|fbm|ridged|billow|cellular|value|terraced] [--cave-w NUMBER]\n                 [--villages off|auto|showcase] [--resources RESOURCE_DIRECTORY] [--no-vegetation] [--no-water] [--no-caves]\n                 [--silent-preview] [--offscreen --frames N --screenshot PNG]\n  synthesize NEW.wav [--seconds 12]\n  analyze AUDIO --output NEW_DIRECTORY [--seed 42] [--preset 0..6] [--time SECONDS] [--size 64]\n\nAll commands accept --log-dir DIRECTORY for bounded diagnostic logs.\nNative preview: drop WAV/MP3/FLAC, Space play/pause; arrows seek; RMB look; WASD fly; wheel zoom; Settings orbit/projection.\n--silent-preview is an explicit software clock diagnostic and produces no sound."
         );
         return Ok(());
     }
@@ -56,6 +56,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                             )
                         }
                         "--audio" => options.audio_path = Some(value(&args, &mut i)?.into()),
+                        "--system-audio" => options.system_audio = true,
                         "--orbit" => options.orbit = true,
                         "--orthographic" => options.orthographic = true,
                         "--noise" => {

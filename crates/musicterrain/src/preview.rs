@@ -42,6 +42,7 @@ pub struct PreviewOptions {
     pub screenshot: Option<PathBuf>,
     pub silent_preview: bool,
     pub size: u32,
+    pub system_audio: bool,
     pub orbit: bool,
     pub orthographic: bool,
     pub noise: Option<crate::terrain::NoiseType>,
@@ -60,6 +61,7 @@ impl Default for PreviewOptions {
             screenshot: None,
             silent_preview: false,
             size: 64,
+            system_audio: false,
             orbit: false,
             orthographic: false,
             noise: None,
@@ -209,6 +211,11 @@ struct App {
     report_sum_ms: f64,
     report_max_ms: f64,
     report_intervals: Vec<f64>,
+    capture: Option<crate::capture::SystemCapture>,
+    live_mapping: MappingState,
+    live_parameters: Option<TerrainParameters>,
+    live_paused: bool,
+    live_time: f64,
     scene: SceneStats,
 }
 impl App {
@@ -223,7 +230,9 @@ impl App {
         }
         preset.parameters.validate()?;
         let loader = Loader::new()?;
-        loader.submit(options.audio_path.clone());
+        if !options.system_audio {
+            loader.submit(options.audio_path.clone());
+        }
         let now = Instant::now();
         let mut ui = Ui::default();
         if let Some(language) = options.language {
@@ -286,10 +295,21 @@ impl App {
             report_sum_ms: 0.,
             report_max_ms: 0.,
             report_intervals: Vec::with_capacity(240),
+            capture: None,
+            live_mapping: MappingState::default(),
+            live_parameters: None,
+            live_paused: false,
+            live_time: 0.0,
             scene: SceneStats::default(),
         };
         if orbit {
             app.aim_at_center();
+        }
+        if app.options.system_audio {
+            app.action(Action::SystemAudio, false);
+            if app.capture.is_none() {
+                return Err(app.status.clone().into());
+            }
         }
         Ok(app)
     }
@@ -318,7 +338,11 @@ impl App {
         }
     }
     fn position(&self) -> f64 {
-        self.transport.as_ref().map_or(0., Transport::position)
+        if self.capture.is_some() {
+            self.live_time
+        } else {
+            self.transport.as_ref().map_or(0., Transport::position)
+        }
     }
     fn history(&mut self) {
         self.undo.push(self.preset.clone());
@@ -336,6 +360,7 @@ impl App {
             seed = self.preset.seed,
             "parameter snapshot changed"
         );
+        self.live_mapping = MappingState::default();
         self.mapped.clear();
         if let Some(loaded) = &self.loaded {
             let mut state = MappingState::default();
@@ -380,6 +405,34 @@ impl App {
             self.history();
         }
         match a {
+            Action::SystemAudio => {
+                if self.capture.is_some() {
+                    self.capture = None;
+                    self.live_parameters = None;
+                    self.status = "FILE AUDIO MODE".into();
+                    if let Some(t) = &self.transport {
+                        t.play();
+                    } else {
+                        self.loader.submit(self.options.audio_path.clone());
+                    }
+                } else {
+                    match crate::capture::SystemCapture::start() {
+                        Ok(capture) => {
+                            if let Some(t) = &self.transport {
+                                t.pause();
+                            }
+                            self.capture = Some(capture);
+                            self.live_paused = false;
+                            self.live_time = 0.0;
+                            self.live_mapping = MappingState::default();
+                            self.status = "SYSTEM AUDIO LIVE".into();
+                        }
+                        Err(e) => self.status = format!("SYSTEM AUDIO ERROR: {e}"),
+                    }
+                }
+                self.revision.0 += 1;
+                self.dirty = true;
+            }
             Action::Orbit => {
                 self.orbit = !self.orbit;
                 if self.orbit {
@@ -423,6 +476,10 @@ impl App {
                 self.revision.0 += 1;
                 self.dirty = true;
             }
+            Action::Play if self.capture.is_some() => {
+                self.live_paused = !self.live_paused;
+            }
+            Action::Seek(_) if self.capture.is_some() => {}
             Action::Play => {
                 if let Some(t) = &self.transport {
                     if t.is_silent() && !self.options.silent_preview {
@@ -682,9 +739,13 @@ impl App {
             self.report_max_ms = self.report_max_ms.max(ms);
             self.report_intervals.push(ms);
         }
-        if let Some(result) = self.loader.receive.as_ref().and_then(|r| r.try_recv().ok()) {
+        if self.capture.is_none()
+            && let Some(result) = self.loader.receive.as_ref().and_then(|r| r.try_recv().ok())
+        {
             match result {
                 Ok(loaded) => {
+                    self.capture = None;
+                    self.live_parameters = None;
                     let transport = if self.options.silent_preview {
                         Ok(Transport::silent(loaded.audio.clone()))
                     } else {
@@ -748,11 +809,35 @@ impl App {
         }
         let position = self.position();
         let audio_time = (position + f64::from(self.offset)).max(0.);
+        if self.capture.is_some() && !self.live_paused {
+            self.live_time += f64::from(dt);
+        }
         let features = self
             .loaded
             .as_ref()
             .map(|l| l.timeline.at(audio_time))
             .unwrap_or_default();
+        let features = self
+            .capture
+            .as_ref()
+            .map_or(features, |capture| capture.features());
+        if let Some(capture) = &self.capture {
+            if capture.failed() {
+                self.status = "SYSTEM AUDIO DISCONNECTED - RESELECT SOURCE".into();
+            }
+            if !self.live_paused {
+                self.live_parameters = self
+                    .preset
+                    .mappings
+                    .evaluate(
+                        &features,
+                        &self.preset.parameters,
+                        dt,
+                        &mut self.live_mapping,
+                    )
+                    .ok();
+            }
+        }
         let mut parameters = if self.page == Page::Noise && !self.music_overlay {
             self.preset.parameters.clone()
         } else {
@@ -768,6 +853,12 @@ impl App {
                 .cloned()
                 .unwrap_or_else(|| self.preset.parameters.clone())
         };
+        if self.capture.is_some() && (self.page != Page::Noise || self.music_overlay) {
+            parameters = self
+                .live_parameters
+                .clone()
+                .unwrap_or_else(|| self.preset.parameters.clone());
+        }
         if self.page != Page::Noise || self.music_overlay {
             parameters.cave_w = ((f64::from(parameters.cave_w)
                 + audio_time * f64::from(parameters.cave_speed)
@@ -806,7 +897,7 @@ impl App {
             self.last_mesh_audio = result.audio_time;
             self.scene = result.scene;
             let hash = result.checksum;
-            if self.loaded.is_some()
+            if (self.loaded.is_some() || self.capture.is_some())
                 && self.mesh_hashes.last() != Some(&hash)
                 && self.mesh_hashes.len() < 32
             {
@@ -914,21 +1005,31 @@ impl App {
                 page: self.page,
                 features: &features,
                 position,
+                system_audio: self.capture.is_some(),
                 duration: self.loaded.as_ref().map_or(0., |l| l.audio.duration()),
-                playing: self.transport.as_ref().is_some_and(Transport::is_playing),
+                playing: if self.capture.is_some() {
+                    !self.live_paused
+                } else {
+                    self.transport.as_ref().is_some_and(Transport::is_playing)
+                },
                 spectrum: self.spectrum,
                 fps: self.fps,
                 generation_ms: self.generation_ms,
                 revision: self.revision.0,
                 status: &self.status,
-                audio_name: self
-                    .loaded
-                    .as_ref()
-                    .map_or("LOADING...", |l| l.name.as_str()),
+                audio_name: if self.capture.is_some() {
+                    "SYSTEM AUDIO LIVE"
+                } else {
+                    self.loaded
+                        .as_ref()
+                        .map_or("LOADING...", |l| l.name.as_str())
+                },
                 offset: self.offset,
                 size: self.options.size,
                 diagnostics,
-                clock_label: if self.transport.as_ref().is_some_and(Transport::is_silent) {
+                clock_label: if self.capture.is_some() {
+                    "SYSTEM AUDIO LIVE"
+                } else if self.transport.as_ref().is_some_and(Transport::is_silent) {
                     "SILENT SOFTWARE CLOCK - NO SOUND"
                 } else {
                     "AUDIO OUTPUT CLOCK"
@@ -945,7 +1046,11 @@ impl App {
                     .map_or("TEXTURES INITIALIZING", |r| r.texture_info.as_str()),
             },
         );
-        let ready = self.meshes >= 2 && self.mesh_hashes.len() >= 2;
+        let ready = if self.capture.is_some() {
+            self.meshes > 0
+        } else {
+            self.meshes >= 2 && self.mesh_hashes.len() >= 2
+        };
         let last = self.options.smoke_frames.is_some_and(|n| self.frames >= n) && ready;
         if last && let Some(r) = &mut self.renderer {
             r.renderer.screenshot = self.options.screenshot.clone();
@@ -1028,6 +1133,8 @@ impl ApplicationHandler for App {
             }
             WindowEvent::DroppedFile(path) => {
                 if self.loader.submit(Some(path)) {
+                    self.capture = None;
+                    self.live_parameters = None;
                     self.status = "ANALYZING AUDIO...".into();
                 } else {
                     self.status = "AUDIO IMPORT QUEUE FULL - WAIT FOR CURRENT IMPORT".into();

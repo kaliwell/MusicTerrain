@@ -24,6 +24,13 @@ Without a file it synthesizes a labeled 12-second beat/melody sample, analyzes i
 with the real FFT and plays that PCM. Drop WAV, MP3 or FLAC onto the window to
 import. Import and analysis run on a bounded worker, never on the audio callback.
 
+On Windows, enable **System Audio** in Settings to react to the default speaker/
+headphone output from browsers and music apps. `--system-audio` starts directly
+in this mode. No microphone or Stereo Mix device is required, and captured sound
+is not replayed or written to disk. Space pauses visual response only; seeking is
+unavailable for a live source. Drop a file to return to file playback. If the
+default audio device changes, turn capture off and on again.
+
 - Space: play/pause; Left/Right: seek five seconds; click/drag the timeline to seek.
 - Hold right mouse and move to look; W/A/S/D move, Q/E descend/ascend.
 - Mouse wheel over the scene zooms. Settings has Auto Orbit and Perspective /

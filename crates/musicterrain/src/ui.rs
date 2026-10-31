@@ -44,6 +44,7 @@ pub enum Action {
     Detail,
     Orbit,
     Projection,
+    SystemAudio,
     Spectrum,
     Offset(f32),
     Resolution(u32),
@@ -84,6 +85,7 @@ pub struct Ui {
     noise_colors: [Vec<u32>; 3],
 }
 pub struct View<'a> {
+    pub system_audio: bool,
     pub clock_label: &'a str,
     pub preset: &'a VisualizationPreset,
     pub presets: &'a [VisualizationPreset],
@@ -751,7 +753,17 @@ impl Ui {
                     );
                 }
                 self.text(&mut h, x, 414.0, "AUDIO OUTPUT: DEFAULT DEVICE", MUTED, 1.0);
-                self.text(&mut h, x, 437.0, "CAPTURE: NOT IMPLEMENTED", MUTED, 1.0);
+                self.button(
+                    &mut h,
+                    [x, 432.0, sw, 30.0],
+                    if v.system_audio {
+                        "SYSTEM AUDIO ON"
+                    } else {
+                        "SYSTEM AUDIO OFF"
+                    },
+                    Action::SystemAudio,
+                    v.system_audio,
+                );
                 self.button(
                     &mut h,
                     [x, 470.0, sw, 30.0],
@@ -948,21 +960,30 @@ impl Ui {
             &mut h,
             215.0,
             height - 54.0,
-            &format!(
-                "{:.2} / {:.2} S     RMS {:.3}     {:.0} FPS",
-                v.position, v.duration, v.features.rms, v.fps
-            ),
+            &if v.system_audio {
+                format!(
+                    "LIVE {:.2} S     RMS {:.3}     {:.0} FPS",
+                    v.position, v.features.rms, v.fps
+                )
+            } else {
+                format!(
+                    "{:.2} / {:.2} S     RMS {:.3}     {:.0} FPS",
+                    v.position, v.duration, v.features.rms, v.fps
+                )
+            },
             INK,
             1.0,
         );
-        self.slider(
-            &mut h,
-            [215.0, height - 31.0, cw, 24.0],
-            "",
-            v.position as f32,
-            [0.0, v.duration.max(0.001) as f32],
-            Action::Seek(0.0),
-        );
+        if !v.system_audio {
+            self.slider(
+                &mut h,
+                [215.0, height - 31.0, cw, 24.0],
+                "",
+                v.position as f32,
+                [0.0, v.duration.max(0.001) as f32],
+                Action::Seek(0.0),
+            );
+        }
         let localized_status = crate::localization::translate(self.language, v.status);
         let mut status = String::new();
         let mut status_width = 0.0;
@@ -1091,6 +1112,7 @@ mod tests {
                 ui.draw(
                     [1280, 800],
                     View {
+                        system_audio: false,
                         clock_label: "SILENT SOFTWARE CLOCK - NO SOUND",
                         preset,
                         presets: &presets,

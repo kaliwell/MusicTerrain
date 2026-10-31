@@ -1,5 +1,6 @@
 param(
     [switch]$Silent,
+    [switch]$SystemAudio,
     [ValidateSet('zh-CN', 'en')][string]$Language,
     [string]$Audio,
     [ValidateSet('square', 'cylinder', 'hexagon', 'diamond')][string]$Shape = 'square',
@@ -23,6 +24,7 @@ $env:HORIZON_LAUNCHER_NO_SELF_UPDATE = '1'
 $arguments = @('demo', '--biome', $Biome, '--log-dir', (Join-Path $session 'logs'))
 $arguments += @('--shape', $Shape, '--size', "$Size", '--quality', $Quality)
 if ($Orbit) { $arguments += '--orbit' }
+if ($SystemAudio) { $arguments += '--system-audio' }
 if ($Orthographic) { $arguments += '--orthographic' }
 if ($Language) { $arguments += @('--language', $Language) }
 if ($Silent) {

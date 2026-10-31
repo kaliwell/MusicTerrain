@@ -4,8 +4,11 @@
   selectable mode in the ordinary Horizon game window.
 - Minecraft saves, collisions, light/heightmap adaptation and beat structures are
   not implemented. Analysis exports are explicitly heightmaps/JSON, not worlds.
-- Live means file playback and audio-timed terrain animation. Microphone input,
-  Windows system loopback and device switching are not implemented.
+- Windows supports default-output WASAPI loopback capture via Settings or
+  `--system-audio`. Microphone input and automatic output-device switching are
+  not implemented; toggle capture off/on after changing the default device.
+  Capture analyzes audio without replaying or saving it. A trailing 4096-sample
+  FFT window, device buffering and mesh generation contribute to visual delay.
 - Playback uses mono analysis PCM and supports default-device f32/i16/u16 formats.
   The sample cursor follows output callbacks; hardware buffering/timestamp latency
   calibration is still needed. Offset is editable. Seeking cannot retract sound

@@ -8,6 +8,11 @@
 双击仓库根目录的 `Start-MusicTerrain.cmd`，默认播放内置的 12 秒示例。
 将 WAV、MP3 或 FLAC 拖入窗口即可导入自己的音乐。
 
+也可以在“设置”开启“系统声音采集”，直接响应音乐软件、浏览器等在默认扬声器/耳机
+播放的声音；不需要麦克风或立体声混音。直接启动采集模式：
+`.\Start-MusicTerrain.cmd -SystemAudio`。系统采集不回放、不保存录音，空格仅暂停画面响应。
+拖入文件会返回文件播放模式；切换默认音频设备后请重新开关一次采集。
+
 已移除实验补帧和顶点形变，使用原生方块更新。保留 fast 优化构建、垂直同步与自适应地形更新频率。
 
 左侧导航下方的 `中文 / ENGLISH` 按钮可即时切换语言，无需重新加载音乐或地形。
@@ -98,7 +103,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\deploy-musicterrai
 
 ## 当前限制
 
-系统声音/麦克风实时采集、Minecraft 世界存档导出、碰撞与流体模拟尚未实现。
+已支持 Windows 默认输出设备的系统声音回环采集；麦克风采集、Minecraft 世界存档导出、碰撞与流体模拟尚未实现。
 `analyze` 输出 PGM/CSV/JSON，仅包含核心高度场，不包含装饰后的完整场景。
 128/256 完整精度需要更多计算，地形更新可能慢于画面帧率；建议先保持默认 64×64。
 当前交付为本机开发构建；正式分发可另用优化构建并进行音频、长时间运行及目标机器验收。
@@ -153,3 +158,8 @@ and logs: `run/optimized-window-27ff48fa72894eff9c507bf1ed937c0b`.
 
 证据：`run/validation/cave-camera-tests.log`、`cave-camera-clippy.log`、
 `projection-renderer-tests.log`、`cave-camera-gpu.json`、`cave-camera-window.json`。
+
+2026-10-31 系统声音采集更新：103 项测试、Clippy 和优化构建通过。
+真实 WASAPI 回环测试使用 48 kHz 双声道默认输出设备，1201 帧 GPU 渲染后正常退出，
+截图中系统音频 RMS 为 0.299，频谱和地形随输入更新。
+证据：`run/validation/capture-tests.log`、`capture-clippy.log`、`system-capture-gpu.json`。
