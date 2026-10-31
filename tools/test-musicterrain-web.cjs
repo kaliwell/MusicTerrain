@@ -14,7 +14,7 @@ test('WE stereo spectra are grouped, bounded and silent-safe',()=>{
 test('partial WE properties retain other settings and reject malformed values',()=>{
  const defaults={size:64,shape:1,noise:2,seed:42,zoom:1,orbit:true};
  const next=clean({size:{value:'999'},shape:{value:'2'},zoom:{value:'bad'},orbit:{value:false}},defaults);
- assert.equal(next.size,128);assert.equal(next.shape,2);assert.equal(next.zoom,1);assert.equal(next.seed,42);assert.equal(next.orbit,false);
+ assert.equal(next.size,256);assert.equal(next.shape,2);assert.equal(next.zoom,1);assert.equal(next.seed,42);assert.equal(next.orbit,false);
 });
 test('quiet sparse music reaches the mapper while silence stays zero',()=>{
  const bins=new Array(128).fill(0);for(const i of [2,4,66,68])bins[i]=.002;

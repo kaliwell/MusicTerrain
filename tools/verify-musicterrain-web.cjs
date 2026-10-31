@@ -17,7 +17,7 @@ const server=http.createServer((request,response)=>{
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const url=`http://127.0.0.1:${server.address().port}/`;
- const browser=await chromium.launch({channel:'msedge',headless:true});
+ const browser=await chromium.launch({channel:'msedge',headless:true,args:['--mute-audio']});
  const errors=[];const results={};
  try{
   const page=await browser.newPage({viewport:{width:1280,height:800}});
@@ -65,6 +65,39 @@ const server=http.createServer((request,response)=>{
   results.large=await engine.evaluate(()=>({...MusicTerrain.diagnostics}));
   await engine.setViewportSize({width:1680,height:720});await engine.waitForTimeout(400);
   await engine.screenshot({path:path.join(evidence,'ultrawide-128.png')});
+  // Exercise the actual native scene, editor, slices and PCM path in WASM.
+  await engine.evaluate(()=>MusicTerrain.edit({size:64,biome:'jungle',villages:'showcase',mines:'showcase',view:'cutaway',showcontrols:true}));
+  let n=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);
+  await engine.waitForFunction(n=>MusicTerrain.diagnostics.meshes>n,n);
+  let scene=await engine.evaluate(()=>MusicTerrain.diagnostics.scene);
+  assert.ok(scene.houses>0&&scene.mines>0&&scene.rails>0);
+  assert.equal(scene.materials.length,65);assert.ok(scene.materials.slice(10).some(v=>v>0));
+  await engine.click('#settings');await engine.getByRole('button',{name:'噪波实验室',exact:true}).click();
+  await engine.waitForFunction(()=>MusicTerrain.config.lab&&document.querySelector('canvas.noise').getContext('2d').getImageData(20,20,1,1).data[3]===255);
+  await engine.screenshot({path:path.join(evidence,'native-scene-lab.png')});
+  await engine.getByRole('button',{name:'预设 / 文件',exact:true}).click();
+  for(let i=0;i<7;i++){
+   n=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);
+   await engine.evaluate(i=>MTEditor.loadPreset(MusicTerrain.metadata.presets[i]),i);
+   await engine.waitForFunction(n=>MusicTerrain.diagnostics.meshes>n,n,{timeout:30000});
+   assert.equal(await engine.locator('#error').isVisible(),false);
+  }
+  assert.equal(await engine.locator('#mappings details').count(),await engine.evaluate(()=>MusicTerrain.config.mappings.rules.length));
+  await engine.evaluate(()=>{window.__validParameters={...MusicTerrain.config.parameters};MusicTerrain.edit({parameters:{...__validParameters,frequency:-1}});});
+  await engine.waitForFunction(()=>Boolean(MusicTerrain.diagnostics.validationError));
+  const stillDrawing=await engine.evaluate(()=>MusicTerrain.diagnostics.frames);await engine.waitForTimeout(250);
+  assert.ok(await engine.evaluate(n=>MusicTerrain.diagnostics.frames>n,stillDrawing));assert.equal(await engine.locator('#error').isVisible(),false);
+  n=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);await engine.evaluate(()=>MusicTerrain.edit({parameters:__validParameters}));
+  await engine.waitForFunction(n=>MusicTerrain.diagnostics.meshes>n&&!MusicTerrain.diagnostics.validationError,n);
+  const wav=Buffer.alloc(44+48000*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(48000,24);wav.writeUInt32LE(96000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);
+  for(let i=0;i<48000;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*500/48000)*12000),44+i*2);
+  await engine.locator('input[accept=".mp3,.wav,.flac,.ogg"]').setInputFiles({name:'synthetic-500Hz.wav',mimeType:'audio/wav',buffer:wav});
+  await engine.evaluate(async()=>{const p=document.getElementById('music-player');p.loop=true;await p.play();});
+  await engine.waitForFunction(()=>MusicTerrain.diagnostics.scene.features.rms>.1,{timeout:15000});
+  scene=await engine.evaluate(()=>MusicTerrain.diagnostics.scene);assert.ok(scene.features.bands[2]>.1||scene.features.bands[3]>.1);results.nativeFeatures=scene.features;
+  await engine.getByRole('button',{name:'切回系统音乐',exact:true}).click();
+  await engine.evaluate(()=>{MTEditor.loadPreset(MusicTerrain.metadata.presets[0]);MusicTerrain.edit({biome:'auto',view:'surface'});});
+  await engine.click('#close');
   await engine.evaluate(()=>wallpaperPropertyListener.applyUserProperties({size:{value:'64'},shape:{value:'1'},orthographic:{value:false},zoom:{value:1.2}}));
   const posterStart=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);await engine.waitForFunction(n=>MusicTerrain.diagnostics.meshes>=n+2,posterStart);
   await engine.setViewportSize({width:1280,height:720});await engine.waitForTimeout(400);

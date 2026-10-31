@@ -10,7 +10,9 @@ description = "Rust/WASM terrain kernel for the MusicTerrain web wallpaper"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-musicterrain = { path = "../musicterrain", default-features = false }
+musicterrain = { path = "../musicterrain", default-features = false, features = ["scene"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [lints]
 workspace = true

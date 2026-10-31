@@ -31,13 +31,14 @@ cargo run -p musicterrain -- preview --audio /path/to/song.wav
 [性能实测](docs/musicterrain/PERFORMANCE.md) ·
 [当前限制](docs/musicterrain/KNOWN_ISSUES.md)
 
-新增 **Wallpaper Engine 网页壁纸首版**：Rust/WASM 内核、WebGL 2 绘制，直接响应
-Wallpaper Engine 的系统音频频谱，支持动态洞穴、多种外形、环绕及正交视角。
+新增 **Wallpaper Engine 网页壁纸**：直接复用原生 Rust 场景，包含 11 种群落、
+65 种材质、村庄农田、矿井、动态洞穴，以及参数、映射、预设和噪波实验室。
+通过 Wallpaper Engine 系统频谱响应音乐，也可导入本地文件交给 Rust FFT 分析。
 [网页壁纸构建与导入说明](docs/musicterrain/WEB_WALLPAPER.md)。
 运行 `tools/build-musicterrain-web.ps1 -Install` 可构建并安装到本机 Wallpaper Engine；
 打包后双击 `Start-MusicTerrain-Web.cmd` 打开，导入包位于 `dist/MusicTerrain-Web.zip`。
 
-原生与网页内核合计 109 项 Rust 测试通过，格式、Clippy 和构建通过。
+原生与网页内核合计 110 项 Rust 测试通过，格式、Clippy 和构建通过。
 Windows 原生渲染、系统音频回环以及网页浏览器渲染已完成本机检查。
 Horizon 游戏菜单接入和 Minecraft 世界存档导出尚未实现。
 

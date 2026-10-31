@@ -2299,6 +2299,8 @@ name = "musicterrain-web"
 version = "0.1.0"
 dependencies = [
  "musicterrain",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

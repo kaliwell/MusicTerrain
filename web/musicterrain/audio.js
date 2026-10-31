@@ -37,15 +37,18 @@
   }
   function clean(properties,current){
     const next={...current};
-    const numeric={size:[32,128],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],sensitivity:[.2,4],cavespeed:[0,1],zoom:[.5,2],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
+    const numeric={size:[32,256],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],sensitivity:[.2,4],cavespeed:[0,1],zoom:[.5,2],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
     for(const [key,bounds] of Object.entries(numeric)){
       if(!properties[key])continue;
       const value=Number(properties[key].value);if(Number.isFinite(value))next[key]=Math.max(bounds[0],Math.min(bounds[1],value));
     }
     next.size=Math.round(next.size/16)*16;
     for(const key of ['shape','noise','seed'])next[key]=Math.round(next[key]);
-    for(const key of ['orbit','orthographic','caves','trees','water','showcontrols','autogain']){
+    for(const key of ['orbit','orthographic','caves','trees','water','showcontrols','autogain','full_detail']){
       if(properties[key]&&typeof properties[key].value==='boolean')next[key]=properties[key].value;
+    }
+    for(const [key,allowed] of Object.entries({biome:['auto','meadow','forest','alpine','shore','birch-forest','taiga','desert','badlands','savanna','swamp','jungle'],villages:['auto','showcase','off'],mines:['auto','showcase','off'],view:['surface','cutaway','underground']})){
+      if(allowed.includes(properties[key]?.value))next[key]=properties[key].value;
     }
     if(properties.background&&typeof properties.background.value==='string'){
       const parts=properties.background.value.trim().split(/\s+/).map(Number);
@@ -53,6 +56,22 @@
     }
     return next;
   }
-  const api={spectrum,clean,zero,createNormalizer};root.MTAudio=api;
+  let previous=new Array(7).fill(0),average=0,lastOnset=-Infinity,onsets=[];
+  function features(values,levels,time){
+    const cuts=[0,4,10,18,30,42,54,64],raw=spectrum(values),gain=raw.rms>1e-8?levels.rms/raw.rms:0;
+    const mono=Array.from({length:64},(_,i)=>{
+      const sample=j=>Number.isFinite(Number(values?.[j]))?Math.max(0,Math.min(1,Number(values[j]))):0;
+      return Math.min(1,(sample(i)+sample(i+64))*.5*gain);
+    });
+    const bands=cuts.slice(0,7).map((start,i)=>Math.sqrt(mono.slice(start,cuts[i+1]).reduce((s,v)=>s+v*v,0)/(cuts[i+1]-start)));
+    const flux=bands.reduce((s,v,i)=>s+Math.max(0,v-previous[i]),0)/7;previous=bands;
+    average=average*.95+flux*.05;const onset=levels.rms>1e-5&&flux>Math.max(.008,average*1.5)&&time-lastOnset>.18;
+    if(onset){lastOnset=time;onsets.push(time);onsets=onsets.slice(-5);}
+    const intervals=onsets.slice(1).map((v,i)=>v-onsets[i]),period=intervals.reduce((a,b)=>a+b,0)/Math.max(1,intervals.length);
+    const stable=intervals.length>=3&&period>.25&&period<2&&intervals.every(v=>Math.abs(v-period)<period*.2)&&time-lastOnset<period*2;
+    const sum=mono.reduce((a,b)=>a+b,0);
+    return {time,rms:levels.rms,bands,centroid:sum?mono.reduce((s,v,i)=>s+v*(i+.5)*20000/64,0)/sum:0,flux,onset,beat_strength:onset?Math.min(1,flux/Math.max(.01,average)):0,beat_phase:stable?((time-lastOnset)/period)%1:null,silence:levels.rms<=1e-5};
+  }
+  const api={spectrum,clean,zero,createNormalizer,features};root.MTAudio=api;
   if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

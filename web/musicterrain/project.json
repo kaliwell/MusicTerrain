@@ -10,9 +10,9 @@
     "supportsaudioprocessing": true,
     "properties": {
       "audioprocessing": {"order": 0, "text": "ui_browse_properties_audioprocessing", "type": "bool", "value": true},
-      "size": {"order": 1, "text": "地形范围（每格一个方块）", "type": "combo", "value": "64", "options": [{"label": "32 × 32", "value": "32"}, {"label": "64 × 64", "value": "64"}, {"label": "96 × 96", "value": "96"}, {"label": "128 × 128", "value": "128"}]},
+      "size": {"order": 1, "text": "地形范围（每格一个方块）", "type": "combo", "value": "64", "options": [{"label": "32 × 32", "value": "32"}, {"label": "64 × 64", "value": "64"}, {"label": "96 × 96", "value": "96"}, {"label": "128 × 128", "value": "128"}, {"label": "256 x 256 (high load)", "value": "256"}]},
       "shape": {"order": 2, "text": "地形外形", "type": "combo", "value": "1", "options": [{"label": "方柱", "value": "0"}, {"label": "圆柱", "value": "1"}, {"label": "六边形柱", "value": "2"}, {"label": "菱形柱", "value": "3"}]},
-      "noise": {"order": 3, "text": "噪波类型", "type": "combo", "value": "2", "options": [{"label": "Perlin", "value": "0"}, {"label": "Simplex", "value": "1"}, {"label": "FBM", "value": "2"}, {"label": "山脊", "value": "3"}, {"label": "云团", "value": "4"}, {"label": "细胞", "value": "5"}, {"label": "值噪波", "value": "6"}, {"label": "阶梯", "value": "7"}]},
+      "noise": {"order": 3, "text": "噪波类型", "type": "combo", "value": "3", "options": [{"label": "Perlin", "value": "0"}, {"label": "Simplex", "value": "1"}, {"label": "FBM", "value": "2"}, {"label": "山脊", "value": "3"}, {"label": "云团", "value": "4"}, {"label": "细胞", "value": "5"}, {"label": "值噪波", "value": "6"}, {"label": "阶梯", "value": "7"}]},
       "seed": {"order": 4, "text": "种子", "type": "slider", "value": 42, "min": 0, "max": 65535},
       "intensity": {"order": 5, "text": "音乐响应强度", "type": "slider", "value": 1, "min": 0, "max": 2, "fraction": true, "precision": 2},
       "autogain": {"order": 6, "text": "自动音频归一化（推荐）", "type": "bool", "value": true},
@@ -28,7 +28,12 @@
       "meshfps": {"order": 16, "text": "地形更新上限（次/秒）", "type": "slider", "value": 15, "min": 4, "max": 30},
       "renderscale": {"order": 17, "text": "画面渲染比例", "type": "slider", "value": 1, "min": 0.5, "max": 1.5, "fraction": true, "precision": 2},
       "background": {"order": 18, "text": "天空颜色", "type": "color", "value": "0.67 0.81 0.94"},
-      "showcontrols": {"order": 19, "text": "显示画面设置按钮", "type": "bool", "value": false}
+      "showcontrols": {"order": 19, "text": "显示画面设置按钮", "type": "bool", "value": false},
+      "biome": {"order": 20, "text": "群落", "type": "combo", "value": "auto", "options": [{"label": "自动", "value": "auto"}, {"label": "meadow", "value": "meadow"}, {"label": "forest", "value": "forest"}, {"label": "alpine", "value": "alpine"}, {"label": "shore", "value": "shore"}, {"label": "birch-forest", "value": "birch-forest"}, {"label": "taiga", "value": "taiga"}, {"label": "desert", "value": "desert"}, {"label": "badlands", "value": "badlands"}, {"label": "savanna", "value": "savanna"}, {"label": "swamp", "value": "swamp"}, {"label": "jungle", "value": "jungle"}]},
+      "villages": {"order": 21, "text": "村庄 / 农田", "type": "combo", "value": "showcase", "options": [{"label": "自动", "value": "auto"}, {"label": "展示", "value": "showcase"}, {"label": "关闭", "value": "off"}]},
+      "mines": {"order": 22, "text": "废弃矿井", "type": "combo", "value": "showcase", "options": [{"label": "自动", "value": "auto"}, {"label": "展示", "value": "showcase"}, {"label": "关闭", "value": "off"}]},
+      "view": {"order": 23, "text": "地下视图", "type": "combo", "value": "surface", "options": [{"label": "完整地形", "value": "surface"}, {"label": "剖开一角", "value": "cutaway"}, {"label": "仅地下", "value": "underground"}]},
+      "full_detail": {"order": 24, "text": "完整方块精度", "type": "bool", "value": true}
     }
   }
 }

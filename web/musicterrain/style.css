@@ -17,3 +17,10 @@ input[type=range]{width:135px;accent-color:#a38bff}input[type=checkbox]{accent-c
 body.wallpaper #notice,body.wallpaper #settings{display:none}body.wallpaper.controls #settings{display:block}
 body.wallpaper.controls #notice{display:flex}
 [hidden]{display:none!important}
+#panel{width:370px;border-radius:2px;box-shadow:none;backdrop-filter:none}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:14px 0}.tabs button{font-size:11px;padding:7px;border-radius:2px}.tabs .active{background:#9680ff;color:#11131b}
+input[type=number],input[type=text],#preset-name{width:135px;background:#23242e;color:inherit;border:1px solid #41414e;padding:5px;min-width:0}
+input[type=file]{width:175px;font-size:10px}textarea{width:100%;resize:vertical;background:#101119;color:#cfcddd;font:11px monospace;margin:12px 0;border:1px solid #41414e;padding:8px}
+.actions{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}.actions button,section>button{font-size:11px;padding:7px;border-radius:2px}
+details{border-top:1px solid #ffffff19;padding:12px 0}summary{cursor:pointer;font-size:12px}.noise{width:100%;height:180px;image-rendering:pixelated}#lab-tab p{font-size:11px}
+audio{width:100%;height:34px;margin:12px 0}#editor-message{font-size:11px;line-height:1.6;color:#c5b8ff;overflow-wrap:anywhere}
