@@ -1,5 +1,7 @@
 //! Bounded preview meshing, using Horizon's production vertex and section formats.
 //! Preview voxels never enter the persistent world or its server thread.
+#[cfg(not(feature = "native"))]
+use crate::scene_mesh::{MIN_Y, SectionKey, SectionMesh, TerrainVertex};
 use crate::{
     caves::cave_slice,
     ecology::{CaveColumn, DecorationKind, Ecology, SceneBiome, SurfaceKind},
@@ -9,6 +11,7 @@ use crate::{
     underground::{UndergroundBiome, UndergroundColumn, UndergroundField},
     village::{VillageMode, VillageScene},
 };
+#[cfg(feature = "native")]
 use horizon_client_render::{
     chunk::MIN_Y,
     gfx::SectionKey,
@@ -22,8 +25,9 @@ use std::{
         mpsc::{self, Receiver, SyncSender, TrySendError},
     },
     thread::JoinHandle,
-    time::Instant,
 };
+
+pub const SCENE_MIN_Y: i32 = MIN_Y;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SceneOptions {
@@ -308,7 +312,8 @@ fn generate_mesh(
     {
         return None;
     }
-    let start = Instant::now();
+    #[cfg(not(target_arch = "wasm32"))]
+    let start = std::time::Instant::now();
     let field = TerrainField::new(snapshot.seed);
     let ecology = Ecology::new(snapshot.seed).with_biome(options.biome);
     let mut builder = MeshBuilder::new(snapshot);
@@ -526,7 +531,16 @@ fn generate_mesh(
         section_hashes,
         revision: snapshot.revision,
         sections,
-        generation_ms: start.elapsed().as_secs_f32() * 1000.0,
+        generation_ms: {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                start.elapsed().as_secs_f32() * 1000.0
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                0.0
+            }
+        },
         checksum,
         audio_time: snapshot.audio_time,
         vertices,

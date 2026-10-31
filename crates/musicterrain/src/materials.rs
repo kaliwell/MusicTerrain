@@ -1,6 +1,7 @@
 //! Stable preview material layers with original pixel art and optional local resource textures.
 //! No game assets are embedded or downloaded by this module.
 
+#[cfg(feature = "native")]
 use std::{
     error::Error,
     fs::File,
@@ -9,8 +10,11 @@ use std::{
 };
 
 const SIZE: u32 = 32;
+#[cfg(feature = "native")]
 const MAX_PNG_BYTES: u64 = 16 * 1024 * 1024;
+#[cfg(feature = "native")]
 const MAX_EDGE: u32 = 2048;
+#[cfg(feature = "native")]
 const MAX_PIXELS: u64 = 4 * 1024 * 1024;
 
 #[repr(u16)]
@@ -188,7 +192,7 @@ impl Material {
                 | Self::JungleLeaves
         )
     }
-    fn filenames(self) -> &'static [&'static str] {
+    pub fn filenames(self) -> &'static [&'static str] {
         match self {
             Self::GrassTop => &["grass_block_top.png"],
             Self::GrassSide => &["grass_block_side.png"],
@@ -273,23 +277,29 @@ pub struct TextureAtlas {
 }
 
 impl TextureAtlas {
-    /// Accept a pack/prepared-resource root, a `textures` root, or a block-texture directory.
-    /// Explicit unrecognised roots and corrupt present PNGs are errors; absent layers keep
-    /// their original procedural artwork. Errors identify texture names, never full paths.
-    pub fn load(root: Option<&Path>) -> Result<Self, Box<dyn Error>> {
-        let mut atlas = Self {
+    /// Original artwork shared by native and browser renderers.
+    pub fn original() -> Self {
+        Self {
             pixels: Material::ALL.into_iter().flat_map(procedural).collect(),
             size: SIZE,
             layers: Material::ALL.len() as u32,
             loaded: 0,
             fallback: Material::ALL.len(),
-            missing: Vec::new(),
+            missing: Material::ALL.to_vec(),
             grass_overlay_loaded: false,
-        };
+        }
+    }
+
+    /// Accept a pack/prepared-resource root, a `textures` root, or a block-texture directory.
+    /// Explicit unrecognised roots and corrupt present PNGs are errors; absent layers keep
+    /// their original procedural artwork. Errors identify texture names, never full paths.
+    #[cfg(feature = "native")]
+    pub fn load(root: Option<&Path>) -> Result<Self, Box<dyn Error>> {
+        let mut atlas = Self::original();
         let Some(root) = root else {
-            atlas.missing.extend(Material::ALL);
             return Ok(atlas);
         };
+        atlas.missing.clear();
         let directory = texture_directory(root)?;
         for material in Material::ALL {
             let filename = material
@@ -325,6 +335,7 @@ impl TextureAtlas {
     }
 }
 
+#[cfg(feature = "native")]
 fn texture_directory(root: &Path) -> Result<PathBuf, Box<dyn Error>> {
     if !root.is_dir() {
         return Err("Texture root must be an existing directory".into());
@@ -350,10 +361,12 @@ fn texture_directory(root: &Path) -> Result<PathBuf, Box<dyn Error>> {
     Err("Texture root contains none of the supported block PNGs; choose a resource pack, prepared resources, textures, or block directory".into())
 }
 
+#[cfg(feature = "native")]
 fn texture_error(name: &str, reason: impl std::fmt::Display) -> Box<dyn Error> {
     format!("Texture {name}: {reason}").into()
 }
 
+#[cfg(feature = "native")]
 fn load_texture(path: &Path, name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     if !std::fs::metadata(path)
         .map_err(|error| texture_error(name, error))?
@@ -426,6 +439,7 @@ fn load_texture(path: &Path, name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(resized)
 }
 
+#[cfg(feature = "native")]
 fn compose_grass(base: &mut [u8], overlay: &[u8]) {
     let tint = Material::GrassTop.tint();
     for (base, overlay) in base

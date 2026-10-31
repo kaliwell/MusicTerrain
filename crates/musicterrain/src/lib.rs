@@ -7,9 +7,9 @@ pub mod ecology;
 #[cfg(feature = "native")]
 pub mod localization;
 pub mod mapping;
-#[cfg(feature = "native")]
+#[cfg(feature = "scene")]
 pub mod materials;
-#[cfg(feature = "native")]
+#[cfg(feature = "scene")]
 pub mod mineshaft;
 pub mod noise4;
 pub mod preset;
@@ -25,10 +25,13 @@ pub mod ui;
 pub mod underground;
 #[cfg(feature = "native")]
 mod unicode_font;
-#[cfg(feature = "native")]
+#[cfg(feature = "scene")]
 pub mod village;
-#[cfg(feature = "native")]
+#[cfg(feature = "scene")]
 pub mod visual;
 
 #[cfg(feature = "native")]
 pub mod capture;
+
+#[cfg(all(feature = "scene", not(feature = "native")))]
+mod scene_mesh;
