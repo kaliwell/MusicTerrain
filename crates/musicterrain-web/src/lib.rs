@@ -97,13 +97,17 @@ impl Default for Kernel {
         let mut warp = MappingRule::band(3, TargetParameter::DomainWarp, [0.0, 6.0]);
         warp.attack = 0.18;
         warp.release = 0.5;
+        let mut overall = MappingRule::band(0, TargetParameter::Amplitude, [0.0, 16.0]);
+        overall.source = AudioSource::Rms;
+        overall.attack = 0.12;
+        overall.release = 0.4;
         Self {
             seed: 42,
             field: TerrainField::new(42),
             ecology: Ecology::new(42),
             underground: UndergroundField::new(42),
             mappings: MappingGraph {
-                rules: vec![amplitude, warp, w],
+                rules: vec![amplitude, overall, warp, w],
             },
             mapping: MappingState::default(),
             solid: Vec::new(),
@@ -634,7 +638,7 @@ mod tests {
         assert_eq!(a.world.heights, heights);
         assert_ne!(a.world.cells, original);
         b.generate(Input {
-            bass: 0.8,
+            bass: 0.0,
             rms: 0.8,
             dt: 0.25,
             ..i

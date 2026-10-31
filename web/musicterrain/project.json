@@ -15,18 +15,20 @@
       "noise": {"order": 3, "text": "噪波类型", "type": "combo", "value": "2", "options": [{"label": "Perlin", "value": "0"}, {"label": "Simplex", "value": "1"}, {"label": "FBM", "value": "2"}, {"label": "山脊", "value": "3"}, {"label": "云团", "value": "4"}, {"label": "细胞", "value": "5"}, {"label": "值噪波", "value": "6"}, {"label": "阶梯", "value": "7"}]},
       "seed": {"order": 4, "text": "种子", "type": "slider", "value": 42, "min": 0, "max": 65535},
       "intensity": {"order": 5, "text": "音乐响应强度", "type": "slider", "value": 1, "min": 0, "max": 2, "fraction": true, "precision": 2},
-      "cavespeed": {"order": 6, "text": "洞穴 W 维演化速度", "type": "slider", "value": 0.12, "min": 0, "max": 1, "fraction": true, "precision": 2},
-      "orbit": {"order": 7, "text": "自动环绕", "type": "bool", "value": true},
-      "orbitspeed": {"order": 8, "text": "环绕速度", "type": "slider", "value": 8, "min": 0, "max": 25},
-      "orthographic": {"order": 9, "text": "正交视角", "type": "bool", "value": false},
-      "zoom": {"order": 10, "text": "视角缩放", "type": "slider", "value": 1, "min": 0.5, "max": 2, "fraction": true, "precision": 2},
-      "caves": {"order": 11, "text": "动态洞穴", "type": "bool", "value": true},
-      "trees": {"order": 12, "text": "树木", "type": "bool", "value": true},
-      "water": {"order": 13, "text": "水体", "type": "bool", "value": true},
-      "meshfps": {"order": 14, "text": "地形更新上限（次/秒）", "type": "slider", "value": 15, "min": 4, "max": 30},
-      "renderscale": {"order": 15, "text": "画面渲染比例", "type": "slider", "value": 1, "min": 0.5, "max": 1.5, "fraction": true, "precision": 2},
-      "background": {"order": 16, "text": "天空颜色", "type": "color", "value": "0.67 0.81 0.94"},
-      "showcontrols": {"order": 17, "text": "显示画面设置按钮", "type": "bool", "value": false}
+      "autogain": {"order": 6, "text": "自动音频归一化（推荐）", "type": "bool", "value": true},
+      "sensitivity": {"order": 7, "text": "音频灵敏度", "type": "slider", "value": 1, "min": 0.2, "max": 4, "fraction": true, "precision": 2},
+      "cavespeed": {"order": 8, "text": "洞穴 W 维演化速度", "type": "slider", "value": 0.12, "min": 0, "max": 1, "fraction": true, "precision": 2},
+      "orbit": {"order": 9, "text": "自动环绕", "type": "bool", "value": true},
+      "orbitspeed": {"order": 10, "text": "环绕速度", "type": "slider", "value": 8, "min": 0, "max": 25},
+      "orthographic": {"order": 11, "text": "正交视角", "type": "bool", "value": false},
+      "zoom": {"order": 12, "text": "视角缩放", "type": "slider", "value": 1, "min": 0.5, "max": 2, "fraction": true, "precision": 2},
+      "caves": {"order": 13, "text": "动态洞穴", "type": "bool", "value": true},
+      "trees": {"order": 14, "text": "树木", "type": "bool", "value": true},
+      "water": {"order": 15, "text": "水体", "type": "bool", "value": true},
+      "meshfps": {"order": 16, "text": "地形更新上限（次/秒）", "type": "slider", "value": 15, "min": 4, "max": 30},
+      "renderscale": {"order": 17, "text": "画面渲染比例", "type": "slider", "value": 1, "min": 0.5, "max": 1.5, "fraction": true, "precision": 2},
+      "background": {"order": 18, "text": "天空颜色", "type": "color", "value": "0.67 0.81 0.94"},
+      "showcontrols": {"order": 19, "text": "显示画面设置按钮", "type": "bool", "value": false}
     }
   }
 }

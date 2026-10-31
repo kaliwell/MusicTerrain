@@ -1,10 +1,11 @@
 (function(){
   'use strict';
   const engine=typeof window.wallpaperRegisterAudioListener==='function';
-  let config={size:64,shape:1,noise:2,seed:42,intensity:1,cavespeed:.12,zoom:1,meshfps:15,orbitspeed:8,renderscale:1,orbit:true,orthographic:false,caves:true,trees:true,water:true,showcontrols:false,background:[.67,.81,.94]};
+  let config={size:64,shape:1,noise:2,seed:42,intensity:1,sensitivity:1,autogain:true,cavespeed:.12,zoom:1,meshfps:15,orbitspeed:8,renderscale:1,orbit:true,orthographic:false,caves:true,trees:true,water:true,showcontrols:false,background:[.67,.81,.94]};
+  const normalizer=MTAudio.createNormalizer();
   let fps=30,enginePaused=false,hidden=!engine&&document.hidden,simulation=false,failed=false,ready=false,busy=false,revision=1,dirty=true;
   let audio=MTAudio.zero(),lastAudio=-Infinity,phase=0,clock=0,angle=.9,lastFrame=performance.now(),lastDraw=0,lastJob=-Infinity,lastJobClock=0,renderer=null,worker=null,held=null;
-  const diagnostics={engine,frames:0,meshes:0,dropped:0,generationMs:0,vertices:0,carved:0,audio:MTAudio.zero(),paused:false,config};
+  const diagnostics={engine,frames:0,meshes:0,dropped:0,generationMs:0,vertices:0,carved:0,audio:MTAudio.zero(),input:MTAudio.zero(),audioCallbacks:0,paused:false,config};
   const $=id=>document.getElementById(id);
   function fail(error){failed=true;$('error').hidden=false;$('error').textContent='壁纸未能加载\n'+String(error);console.error(error);}
   function apply(properties){const next=MTAudio.clean(properties,config);if(JSON.stringify(next)!==JSON.stringify(config)){config=next;diagnostics.config=config;revision++;dirty=true;sync();}}
@@ -15,7 +16,7 @@
     applyGeneralProperties(properties){if(Number.isFinite(Number(properties.fps)))fps=Math.max(1,Math.min(240,Number(properties.fps)||30));},
     setPaused(value){enginePaused=Boolean(value);lastFrame=performance.now();lastDraw=0;diagnostics.paused=enginePaused||hidden;}
   };
-  function receiveAudio(values){audio=MTAudio.spectrum(values);lastAudio=performance.now();diagnostics.audio=audio;}
+  function receiveAudio(values){lastAudio=performance.now();diagnostics.input=MTAudio.spectrum(values);audio=normalizer.update(diagnostics.input,lastAudio/1000,config.sensitivity,config.autogain);diagnostics.audio=audio;diagnostics.audioCallbacks++;}
   if(engine)window.wallpaperRegisterAudioListener(receiveAudio);
   window.MusicTerrain={diagnostics,applyProperties:apply,receiveAudio,setPaused:window.wallpaperPropertyListener.setPaused};
   function sync(){
@@ -29,8 +30,9 @@
     if(message.revision!==revision){diagnostics.dropped++;dirty=true;return;}
     renderer.upload(message);diagnostics.meshes++;diagnostics.generationMs=message.milliseconds;
     diagnostics.vertices=(message.solid.length+message.water.length)/7;diagnostics.carved=message.carved;
-    $('status').textContent=engine?'随系统音乐变化':simulation?'模拟音乐预览 · 无声音':'浏览器预览 · 等待音频';
+    $('status').textContent=engine?(diagnostics.audioCallbacks===0?'等待系统音频，请开启音频处理':`音频输入 ${diagnostics.input.rms.toFixed(4)} → 响应 ${diagnostics.audio.bass.toFixed(2)} · ${diagnostics.audioCallbacks} 次回调`):simulation?'模拟音乐预览 · 无声音':'浏览器预览 · 等待音频';
     $('metrics').textContent=`完整精度 · ${config.size} × ${config.size}\n生成 ${message.milliseconds.toFixed(1)} ms · ${(diagnostics.vertices/3).toLocaleString()} 个三角形`;
+    if(engine)$('source').textContent=diagnostics.audioCallbacks===0?'尚未收到系统频谱，请开启壁纸的音频处理':diagnostics.input.rms<=1e-5?'音频接口已连接，当前没有声音':`已检测到系统音乐 · 输入 ${diagnostics.input.rms.toFixed(4)} / 响应 ${diagnostics.audio.rms.toFixed(2)}`;
   }
   function frame(now){
     requestAnimationFrame(frame);const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
@@ -38,7 +40,7 @@
     clock+=dt;phase=(phase+dt*config.cavespeed)%256;if(config.orbit)angle+=dt*config.orbitspeed*Math.PI/180;
     if(held){accept(held);held=null;}
     if(simulation&&!engine){const pulse=Math.exp(-(clock*1.8%1)*6);audio={rms:.12+pulse*.25,bass:pulse*.55,mid:.15+.12*Math.sin(clock*1.1),treble:pulse*.2};diagnostics.audio=audio;}
-    else if(now-lastAudio>300){audio=MTAudio.zero();diagnostics.audio=audio;}
+    else if(now-lastAudio>300){audio=MTAudio.zero();diagnostics.audio=audio;diagnostics.input=MTAudio.zero();normalizer.reset();}
     const meshInterval=Math.max(1000/Math.min(config.meshfps,fps),diagnostics.generationMs*2);
     if(ready&&!busy&&(dirty||now-lastJob>=meshInterval)){
       busy=true;dirty=false;lastJob=now;const elapsed=Math.min(.25,Math.max(0,clock-lastJobClock));lastJobClock=clock;

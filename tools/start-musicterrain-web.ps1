@@ -21,7 +21,8 @@ if(-not $running){
   if(Get-Process wallpaper64 -ErrorAction SilentlyContinue){break}
  }
 }
-$arguments=@('-control','openWallpaper','-file',('"'+(Resolve-Path -LiteralPath $Project).Path+'"'))
+$quote=[string][char]34
+$arguments=@('-control','openWallpaper','-file',($quote+(Resolve-Path -LiteralPath $Project).Path+$quote))
 if($Preview){$arguments+=@('-playInWindow','MusicTerrain-Web-Preview','-width','1280','-height','720')}
 Start-Process -FilePath $engine -ArgumentList $arguments -WorkingDirectory $WallpaperEngine -WindowStyle Hidden
 Write-Host 'MusicTerrain web wallpaper requested in Wallpaper Engine.'

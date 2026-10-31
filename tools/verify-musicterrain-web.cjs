@@ -35,8 +35,8 @@ const server=http.createServer((request,response)=>{
   await engine.evaluate(()=>wallpaperPropertyListener.applyUserProperties({orbit:{value:false},cavespeed:{value:0}}));
   await engine.waitForTimeout(600);
   const quiet=await engine.evaluate(()=>MusicTerrain.diagnostics.vertices);
-  await engine.evaluate(()=>{window.__audioTimer=setInterval(()=>__audioCallback(new Array(128).fill(.6)),33);});
-  await engine.waitForFunction(quiet=>MusicTerrain.diagnostics.audio.rms>.5&&MusicTerrain.diagnostics.vertices!==quiet,quiet,{timeout:15000});
+  await engine.evaluate(()=>{window.__audioTimer=setInterval(()=>{const bins=new Array(128).fill(0);for(const i of [2,4,66,68])bins[i]=.002;__audioCallback(bins);},33);});
+  await engine.waitForFunction(quiet=>MusicTerrain.diagnostics.input.rms<.001&&MusicTerrain.diagnostics.audio.bass>.3&&MusicTerrain.diagnostics.vertices!==quiet,quiet,{timeout:15000});
   results.live=await engine.evaluate(()=>({...MusicTerrain.diagnostics}));
   await engine.screenshot({path:path.join(evidence,'audio-reactive.png')});
   for(let shape=0;shape<4;shape++){
@@ -68,7 +68,8 @@ const server=http.createServer((request,response)=>{
   await engine.evaluate(()=>wallpaperPropertyListener.applyUserProperties({size:{value:'64'},shape:{value:'1'},orthographic:{value:false},zoom:{value:1.2}}));
   const posterStart=await engine.evaluate(()=>MusicTerrain.diagnostics.meshes);await engine.waitForFunction(n=>MusicTerrain.diagnostics.meshes>=n+2,posterStart);
   await engine.setViewportSize({width:1280,height:720});await engine.waitForTimeout(400);
-  await engine.screenshot({path:path.resolve(__dirname,'../web/musicterrain/preview.jpg'),type:'jpeg',quality:90});
+  const poster=process.argv.includes('--update-preview')?path.resolve(__dirname,'../web/musicterrain/preview.jpg'):path.join(evidence,'preview.jpg');
+  await engine.screenshot({path:poster,type:'jpeg',quality:90});
   assert.deepEqual(errors,[]);results.errors=errors;
   fs.writeFileSync(path.join(evidence,'results.json'),JSON.stringify(results,null,2));
   console.log(JSON.stringify({passed:true,previewMs:results.preview.generationMs,liveMs:results.live.generationMs,largeMs:results.large.generationMs,fpsCapFrames:frames,evidence},null,2));

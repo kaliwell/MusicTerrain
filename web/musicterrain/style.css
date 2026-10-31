@@ -15,4 +15,5 @@ input[type=range]{width:135px;accent-color:#a38bff}input[type=checkbox]{accent-c
 .wide{width:100%;font-size:12px;padding:10px;background:#8b76d9;margin-top:10px}footer{font-size:10px;color:#9b9eaf;line-height:1.7;margin-top:14px}
 #error{position:fixed;inset:35% 15% auto;padding:22px;background:#20212eef;border:1px solid #8279a7;border-radius:10px;line-height:1.8;text-align:center;white-space:pre-wrap}
 body.wallpaper #notice,body.wallpaper #settings{display:none}body.wallpaper.controls #settings{display:block}
+body.wallpaper.controls #notice{display:flex}
 [hidden]{display:none!important}

@@ -11,21 +11,40 @@
       const b=Number.isFinite(right)?Math.max(0,Math.min(1,right)):0;
       mono[i]=(a+b)*.5;energy+=mono[i]*mono[i];
     }
-    const mean=(a,b)=>{let sum=0;for(let i=a;i<b;i++)sum+=mono[i];return sum/(b-a);};
+    const band=(a,b)=>{let sum=0;for(let i=a;i<b;i++)sum+=mono[i]*mono[i];return Math.sqrt(sum/(b-a));};
     // WE supplies spectrum magnitudes, not PCM. This is a level estimate;
     // these grouped ranges are not claims of calibrated frequency/RMS readings.
-    return {rms:Math.sqrt(energy/64),bass:mean(0,12),mid:mean(12,40),treble:mean(40,64)};
+    return {rms:Math.sqrt(energy/64),bass:band(0,12),mid:band(12,40),treble:band(40,64)};
+  }
+  function createNormalizer(){
+    let envelope=0,lastTime=null,silence=0;
+    return {
+      reset(){envelope=0;lastTime=null;silence=0;},
+      update(levels,time,sensitivity=1,automatic=true){
+        const dt=lastTime===null?1/30:Math.max(0,Math.min(.25,time-lastTime));lastTime=time;
+        const peak=Math.max(levels.rms,levels.bass,levels.mid,levels.treble);
+        if(peak<=1e-5){silence+=dt;if(silence>.3)envelope=0;return zero();}
+        silence=0;
+        if(envelope===0)envelope=peak;
+        const tau=peak>envelope?.08:1.5;
+        envelope+=(peak-envelope)*(1-Math.exp(-dt/tau));
+        // Normalize to the shared mapper's useful range. A slow release retains
+        // beat dynamics instead of normalizing every individual frame to a peak.
+        const gain=sensitivity*(automatic?.45/Math.max(.0005,envelope):1);
+        return Object.fromEntries(Object.entries(levels).map(([k,v])=>[k,Math.max(0,Math.min(1,v*gain))]));
+      }
+    };
   }
   function clean(properties,current){
     const next={...current};
-    const numeric={size:[32,128],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],cavespeed:[0,1],zoom:[.5,2],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
+    const numeric={size:[32,128],shape:[0,3],noise:[0,7],seed:[0,65535],intensity:[0,2],sensitivity:[.2,4],cavespeed:[0,1],zoom:[.5,2],meshfps:[4,30],orbitspeed:[0,25],renderscale:[.5,1.5]};
     for(const [key,bounds] of Object.entries(numeric)){
       if(!properties[key])continue;
       const value=Number(properties[key].value);if(Number.isFinite(value))next[key]=Math.max(bounds[0],Math.min(bounds[1],value));
     }
     next.size=Math.round(next.size/16)*16;
     for(const key of ['shape','noise','seed'])next[key]=Math.round(next[key]);
-    for(const key of ['orbit','orthographic','caves','trees','water','showcontrols']){
+    for(const key of ['orbit','orthographic','caves','trees','water','showcontrols','autogain']){
       if(properties[key]&&typeof properties[key].value==='boolean')next[key]=properties[key].value;
     }
     if(properties.background&&typeof properties.background.value==='string'){
@@ -34,6 +53,6 @@
     }
     return next;
   }
-  const api={spectrum,clean,zero};root.MTAudio=api;
+  const api={spectrum,clean,zero,createNormalizer};root.MTAudio=api;
   if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
