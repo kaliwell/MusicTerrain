@@ -1,0 +1,18 @@
+:root{color-scheme:dark;font-family:"Microsoft YaHei",system-ui,sans-serif;background:#abcdee;color:#ececf5}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 25%,#c8e2fa 0%,#a6caee 70%,#98bce0 100%)}
+#world{width:100%;height:100%;display:block;touch-action:none}
+#notice{position:fixed;left:26px;top:24px;display:flex;flex-direction:column;gap:7px;color:#263d51;pointer-events:none}
+#notice strong{font-size:14px;letter-spacing:2px}#status{font-size:11px;opacity:.7}
+button,select,input{font:inherit}button{border:0;color:inherit;cursor:pointer;background:#292936;border-radius:6px}
+#settings{position:fixed;right:22px;bottom:22px;padding:8px 12px;background:#161820c9;font-size:21px;opacity:.5;transition:opacity .2s}
+#settings:hover{opacity:1}#panel{position:fixed;right:22px;bottom:75px;width:300px;max-height:calc(100vh - 100px);overflow-y:auto;padding:20px;background:#14151df0;border:1px solid #ffffff1c;border-radius:12px;box-shadow:0 12px 60px #15283a30;backdrop-filter:blur(12px)}
+header{display:flex;align-items:center;justify-content:space-between;letter-spacing:1px}header button{font-size:22px;background:transparent}
+#source{font-size:11px;color:#a9acbe;line-height:1.7;margin:12px 0 18px}
+label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;margin:13px 0;min-height:22px}
+select{max-width:155px;min-width:125px;padding:4px 7px;border:1px solid #41414e;border-radius:4px;color:#dedfec;background:#23242e}
+input[type=range]{width:135px;accent-color:#a38bff}input[type=checkbox]{accent-color:#a38bff;width:16px;height:16px}
+.wide{width:100%;font-size:12px;padding:10px;background:#8b76d9;margin-top:10px}footer{font-size:10px;color:#9b9eaf;line-height:1.7;margin-top:14px}
+#error{position:fixed;inset:35% 15% auto;padding:22px;background:#20212eef;border:1px solid #8279a7;border-radius:10px;line-height:1.8;text-align:center;white-space:pre-wrap}
+body.wallpaper #notice,body.wallpaper #settings{display:none}body.wallpaper.controls #settings{display:block}
+[hidden]{display:none!important}

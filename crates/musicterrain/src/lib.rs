@@ -1,5 +1,6 @@
 //! MusicTerrain's opt-in audio, mapping and terrain kernel.
 pub mod audio;
+pub mod caves;
 pub mod diagnostics;
 pub mod dsp;
 pub mod ecology;
@@ -16,7 +17,6 @@ pub mod preset;
 pub mod preview;
 #[cfg(feature = "native")]
 pub mod renderer;
-#[cfg(feature = "native")]
 pub mod shape;
 pub mod terrain;
 pub mod transport;

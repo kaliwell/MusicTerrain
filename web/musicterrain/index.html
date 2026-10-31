@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MusicTerrain · 音乐方块地形</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%239680ff' d='M4 8h24v20H4z'/%3E%3Cpath fill='%237ac74f' d='M4 4h24v8H4z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="world" aria-label="随音乐变化的方块地形"></canvas>
+  <div id="notice"><strong>MusicTerrain</strong><span id="status">正在生成地形…</span></div>
+  <button id="settings" aria-label="打开设置" title="设置">⚙</button>
+  <aside id="panel" hidden>
+    <header><strong>音乐方块地形</strong><button id="close" aria-label="关闭设置">×</button></header>
+    <p id="source">浏览器预览 · 系统音频在 Wallpaper Engine 中接入</p>
+    <label>地形范围<select data-property="size"><option>32</option><option selected>64</option><option>96</option><option>128</option></select></label>
+    <label>外形<select data-property="shape"><option value="0">方柱</option><option value="1" selected>圆柱</option><option value="2">六边形柱</option><option value="3">菱形柱</option></select></label>
+    <label>噪波<select data-property="noise"><option value="0">Perlin</option><option value="1">Simplex</option><option value="2" selected>FBM</option><option value="3">山脊</option><option value="4">云团</option><option value="5">细胞</option><option value="6">值噪波</option><option value="7">阶梯</option></select></label>
+    <label>音乐响应<input data-property="intensity" type="range" min="0" max="2" step="0.05" value="1"></label>
+    <label>洞穴演化速度<input data-property="cavespeed" type="range" min="0" max="1" step="0.01" value="0.12"></label>
+    <label>缩放<input data-property="zoom" type="range" min="0.5" max="2" step="0.05" value="1"></label>
+    <label>地形更新上限<input data-property="meshfps" type="range" min="4" max="30" step="1" value="15"></label>
+    <label>自动环绕<input data-property="orbit" type="checkbox" checked></label>
+    <label>正交视角<input data-property="orthographic" type="checkbox"></label>
+    <label>洞穴<input data-property="caves" type="checkbox" checked></label>
+    <label>树木<input data-property="trees" type="checkbox" checked></label>
+    <label>水体<input data-property="water" type="checkbox" checked></label>
+    <button id="demo" class="wide">开启模拟音乐（无声音）</button>
+    <footer id="metrics">完整精度 · 每格一个方块</footer>
+  </aside>
+  <div id="error" hidden role="alert"></div>
+  <script src="audio.js"></script>
+  <script src="math.js"></script>
+  <script src="renderer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

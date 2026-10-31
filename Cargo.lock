@@ -2295,6 +2295,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "musicterrain-web"
+version = "0.1.0"
+dependencies = [
+ "musicterrain",
+]
+
+[[package]]
 name = "naga"
 version = "30.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

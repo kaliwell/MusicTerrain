@@ -9,6 +9,9 @@ wgpu renderer, GPU arenas, camera math and HUD. Vanilla gameplay and saves are u
 
 ## Run the demo
 
+For the Rust/WASM + WebGL Wallpaper Engine version, see
+[Web wallpaper build, import and scope](WEB_WALLPAPER.md).
+
 The manifests declare Rust **1.90+**; the tested toolchain is stable **1.99.1**. Linux also needs ALSA development headers and a
 working Vulkan/OpenGL display driver (`libasound2-dev` on Debian). Windows uses
 cpal's native audio backend and Horizon's existing graphics backends.
